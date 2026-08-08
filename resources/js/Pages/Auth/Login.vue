@@ -1,19 +1,11 @@
 <script setup>
-import Checkbox from '@/Components/Checkbox.vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import RetroButton from '@/Components/Retro/RetroButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
-    canResetPassword: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
+    canResetPassword: { type: Boolean },
+    status: { type: String },
 });
 
 const form = useForm({
@@ -22,79 +14,125 @@ const form = useForm({
     remember: false,
 });
 
-const submit = () => {
+function submit() {
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
     });
-};
+}
 </script>
 
 <template>
+    <Head title="Log in" />
     <GuestLayout>
-        <Head title="Log in" />
+        <h2 class="font-cabinet retro-form-title">Selamat Datang</h2>
+        <p class="retro-form-subtitle">Login untuk masuk ke dashboard perpustakaan</p>
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
-            {{ status }}
-        </div>
+        <div v-if="status" class="retro-status">{{ status }}</div>
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+        <form @submit.prevent="submit" class="retro-form">
+            <div class="retro-field">
+                <label class="retro-label">Email</label>
+                <input v-model="form.email" type="email" required autofocus class="retro-input" />
+                <span v-if="form.errors.email" class="retro-error">{{ form.errors.email }}</span>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
+            <div class="retro-field">
+                <label class="retro-label">Password</label>
+                <input v-model="form.password" type="password" required class="retro-input" />
+                <span v-if="form.errors.password" class="retro-error">{{ form.errors.password }}</span>
             </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
-                </label>
-            </div>
+            <label class="retro-checkbox-row">
+                <input v-model="form.remember" type="checkbox" />
+                <span>Ingat saya</span>
+            </label>
 
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Forgot your password?
-                </Link>
+            <RetroButton variant="primary" as="button" type="submit" :disabled="form.processing" class="retro-submit">
+                {{ form.processing ? 'Memproses...' : 'Login' }}
+            </RetroButton>
 
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Log in
-                </PrimaryButton>
-            </div>
+            <Link v-if="canResetPassword" :href="route('password.request')" class="retro-link">
+                Lupa password?
+            </Link>
         </form>
     </GuestLayout>
 </template>
+
+
+<style scoped>
+.retro-form-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+.retro-form-subtitle {
+    font-size: 14px;
+    color: var(--retro-text-secondary);
+    margin-top: 4px;
+    margin-bottom: 24px;
+}
+
+.retro-status {
+    background: var(--retro-green);
+    border: 2px solid var(--retro-border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.retro-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.retro-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.retro-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+.retro-input {
+    padding: 12px 16px;
+    border: 2px solid var(--retro-border);
+    border-radius: 14px;
+    font-size: 14px;
+    outline: none;
+}
+.retro-input:focus {
+    background: var(--retro-yellow);
+}
+.retro-error {
+    font-size: 12px;
+    color: var(--retro-red);
+    font-weight: 600;
+}
+
+.retro-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #1a1a1a;
+    cursor: pointer;
+}
+
+.retro-submit {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.retro-link {
+    text-align: center;
+    font-size: 13px;
+    color: var(--retro-text-secondary);
+    text-decoration: underline;
+}
+</style>
