@@ -1,6 +1,9 @@
 <script setup>
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head, Link } from "@inertiajs/vue3";
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import RetroCard from '@/Components/Retro/RetroCard.vue';
+import RetroButton from '@/Components/Retro/RetroButton.vue';
+import BookListItem from '@/Components/Retro/BookListItem.vue';
+import { Head, Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     bukus: { type: Object, required: true },
@@ -13,62 +16,34 @@ const props = defineProps({
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="rb-header-row">
-                <h2 class="rb-h2">DAFTAR INDUK BUKU</h2>
-                <Link
-                    :href="route('buku.create')"
-                    class="rb-btn rb-btn--primary"
-                >
-                    + INPUT BUKU
+            <div class="retro-header-row">
+                <h2 class="font-cabinet retro-title">Inventory Buku</h2>
+                <Link :href="route('buku.create')">
+                    <RetroButton variant="primary">+ Input Buku</RetroButton>
                 </Link>
             </div>
         </template>
 
-        <div class="rb-table-wrap">
-            <table class="rb-table">
-                <thead>
-                    <tr>
-                        <th class="rb-table__no">ID</th>
-                        <th>JUDUL BUKU</th>
-                        <th>KLASIFIKASI</th>
-                        <th>PENGARANG</th>
-                        <th>PENERBIT</th>
-                        <th>TH. TERBIT</th>
-                        <th>SUBKATEGORI</th>
-                        <th>SUMBER</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="b in bukus.data" :key="b.id_buku">
-                        <td class="rb-table__no">{{ b.id_buku }}</td>
-                        <td>{{ b.judul_buku }}</td>
-                        <td>{{ b.klasifikasi_buku }}</td>
-                        <td>{{ b.pengarang_buku }}</td>
-                        <td>{{ b.penerbit_buku }}</td>
-                        <td>{{ b.tahunterbit_buku }}</td>
-                        <td>{{ subkategori[b.kode_subkategori] ?? "-" }}</td>
-                        <td>{{ b.sumber_buku || "-" }}</td>
-                    </tr>
-                    <tr v-if="bukus.data.length === 0">
-                        <td colspan="8" class="rb-empty">
-                            BELUM ADA DATA BUKU
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <RetroCard padding="p-0" rounded="24px">
+            <BookListItem
+                v-for="b in bukus.data"
+                :key="b.id_buku"
+                :judul="b.judul_buku"
+                :pengarang="b.pengarang_buku"
+                :tahun="b.tahunterbit_buku"
+                :isbn="b.isbn_buku"
+                :status="subkategori[b.kode_subkategori] ?? '-'"
+            />
+            <div v-if="bukus.data.length === 0" class="retro-empty">Belum ada data buku</div>
+        </RetroCard>
 
-        <!-- Pagination -->
-        <div class="rb-pagination">
+        <div class="retro-pagination">
             <Link
                 v-for="(link, i) in bukus.links"
                 :key="i"
                 :href="link.url || '#'"
-                class="rb-page-link"
-                :class="{
-                    'rb-page-link--active': link.active,
-                    'rb-page-link--disabled': !link.url,
-                }"
+                class="retro-page-link"
+                :class="{ 'retro-page-link--active': link.active, 'retro-page-link--disabled': !link.url }"
                 v-html="link.label"
             />
         </div>
@@ -76,103 +51,39 @@ const props = defineProps({
 </template>
 
 <style scoped>
-.rb-header-row {
+.retro-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
 }
-
-.rb-h2 {
-    font-family: "Archivo Black", sans-serif;
+.retro-title {
     font-size: 32px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #000;
+    font-weight: 800;
+    color: #1a1a1a;
 }
-
-.rb-btn {
-    font-family: "Work Sans", sans-serif;
-    font-weight: 600;
-    font-size: 14px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 10px 24px;
-    border: 3px solid #000;
-    text-decoration: none;
-    display: inline-block;
-}
-.rb-btn--primary {
-    background: #000;
-    color: #fff;
-}
-.rb-btn--primary:hover {
-    background: #fff;
-    color: #000;
-}
-
-.rb-table-wrap {
-    overflow-x: auto;
-    border: 3px solid #000;
-}
-
-.rb-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.rb-table thead th {
-    background: #000;
-    color: #fff;
-    font-family: "Archivo Black", sans-serif;
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-align: left;
-    padding: 10px 12px;
-    white-space: nowrap;
-}
-.rb-table__no {
-    width: 70px;
-    text-align: center;
-}
-.rb-table tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #000;
-    font-family: "Work Sans", sans-serif;
-    font-size: 14px;
-}
-.rb-empty {
-    text-align: center;
+.retro-empty {
     padding: 40px;
-    font-family: "Space Mono", monospace;
-    color: #555;
+    text-align: center;
+    color: var(--retro-muted);
 }
-
-.rb-pagination {
+.retro-pagination {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 16px;
+    gap: 8px;
+    margin-top: 20px;
 }
-.rb-page-link {
-    font-family: "Space Mono", monospace;
-    font-size: 13px;
+.retro-page-link {
     padding: 8px 14px;
-    border: 2px solid #000;
+    border: 2px solid var(--retro-border);
+    border-radius: 10px;
     text-decoration: none;
-    color: #000;
+    color: #1a1a1a;
+    font-size: 13px;
+    font-weight: 600;
 }
-.rb-page-link:hover {
-    background: #000;
-    color: #fff;
-}
-.rb-page-link--active {
-    background: #000;
-    color: #fff;
-}
-.rb-page-link--disabled {
-    color: #ccc;
-    border-color: #ccc;
-    pointer-events: none;
-}
+.retro-page-link:hover { background: var(--retro-yellow); }
+.retro-page-link--active { background: #1a1a1a; color: #fff; }
+.retro-page-link--disabled { color: #ccc; border-color: #ddd; pointer-events: none; }
 </style>

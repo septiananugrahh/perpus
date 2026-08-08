@@ -1,3 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Satoshi:wght@400;500;700&family=Space+Grotesk:wght@700;800&display=swap");
+/* Catatan: Cabinet Grotesk tidak tersedia di Google Fonts, dipakai Space Grotesk sebagai pengganti terdekat */
+
+:root {
+    --retro-pink: #ff85e1;
+    --retro-purple: #b19bff;
+    --retro-yellow: #ffea7f;
+    --retro-cyan: #7fffd4;
+    --retro-orange: #ffab70;
+    --retro-green: #b4c7a0;
+    --retro-red: #ff6b6b;
+    --retro-bg: #f9f7f2;
+    --retro-border: #1a1a1a;
+    --retro-text-secondary: #666666;
+    --retro-muted: #999999;
+}
+
+body {
+    background: var(--retro-bg);
+    font-family: "Satoshi", "Work Sans", sans-serif;
+}
+
+.font-cabinet {
+    font-family: "Space Grotesk", sans-serif;
+}
