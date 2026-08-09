@@ -1,0 +1,181 @@
+name: Laravel & Vue 3 CI/CD
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  laravel-vue-deploy:
+    if: contains(github.event.head_commit.message, '[deploy]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repo
+        uses: actions/checkout@v4
+
+      # Setup PHP
+      - uses: shivammathur/setup-php@15c43e89cdef867065b0213be354c2841860869e
+        with:
+          php-version: "8.3"
+
+      - name: 🧶 Install PHP Dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Generate .env from example
+        run: |
+          cp .env.example .env
+          sed -i "s|APP_URL=.*|APP_URL=https://perpus.saicponorogo.com|" .env
+          sed -i "s|DB_DATABASE=.*|DB_DATABASE=${{ secrets.DATABASE_NAME }}|" .env
+          sed -i "s|DB_USERNAME=.*|DB_USERNAME=${{ secrets.DATABASE_NAME }}|" .env
+          sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DATABASE_PASS }}|" .env
+          sed -i "s|APP_ENV=.*|APP_ENV=production|" .env
+          sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
+          sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
+
+      - name: 🔧 Generate Ziggy Routes
+        run: php artisan ziggy:generate resources/js/ziggy.js
+
+      - name: 🔧 Generate Key Laravel
+        run: php artisan key:generate
+
+      # Set directory permissions
+      - name: Directory Permissions
+        run: chmod -R 777 storage bootstrap/cache
+
+      # Setup Node.js
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "24"
+
+      # Install dependencies Vue
+      - name: Install Node.js dependencies
+        run: npm install
+
+      # Build aplikasi Vue 3
+      - name: Build Vue 3 app
+        run: npm run build
+
+        # Build aplikasi Vue 3
+      - name: Build Vue 3 app
+        run: npm run build
+
+      # Hapus folder build lama di server sebelum upload
+      - name: 🗑️ Hapus folder build lama di server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: 65002
+          script: |
+            rm -rf /home/${{ secrets.HOSTINGER_SSH_USER }}/domains/saicponorogo.com/public_html/subdomain/perpus/build
+            echo "✅ Folder build lama berhasil dihapus"
+
+      # Deploy public files
+      - name: Siapkan file Publik untuk deploy (tanpa index.php dan .htaccess)
+        run: |
+          mkdir .deploy_publik
+          shopt -s extglob
+          cp -r public/!(index.php|.htaccess) .deploy_publik/
+
+      - name: Siapkan file Private untuk deploy (tanpa index.php dan .htaccess)
+        run: |
+          mkdir .deploy_private
+          rsync -av --exclude='index.php' --exclude='.htaccess' ./ .deploy_private/
+
+      - name: PUBLIC FILES | Sync files to server via rsync untuk public files
+        uses: burnett01/rsync-deployments@7.1.0
+        with:
+          switches: -avzr
+          path: ".deploy_publik/"
+          remote_path: "/home/${{ secrets.HOSTINGER_SSH_USER }}/domains/saicponorogo.com/public_html/subdomain/perpus"
+          remote_host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          remote_port: 65002
+          remote_user: ${{ secrets.HOSTINGER_SSH_USER }}
+          remote_key: ${{ secrets.HOSTINGER_SSH_KEY }}
+
+      - name: SERVER FILES | Sync files to server via rsync untuk server files
+        uses: burnett01/rsync-deployments@7.1.0
+        with:
+          switches: -avzr
+          path: ".deploy_private/"
+          remote_path: "/home/${{ secrets.HOSTINGER_SSH_USER }}/domains/saicponorogo.com/perpus"
+          remote_host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          remote_port: 65002
+          remote_user: ${{ secrets.HOSTINGER_SSH_USER }}
+          remote_key: ${{ secrets.HOSTINGER_SSH_KEY }}
+
+      # Jalankan Artisan Commands di Server hostinger
+      - name: 🚀 Run Artisan Commands on Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: 65002
+          script: |
+            cd /home/${{ secrets.HOSTINGER_SSH_USER }}/domains/saicponorogo.com/perpus
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan optimize
+
+      # Bersihkan file yang tidak diperlukan di production
+      - name: 🧹 Cleanup unnecessary files on Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: 65002
+          script: |
+            cd /home/${{ secrets.HOSTINGER_SSH_USER }}/domains/saicponorogo.com/perpus
+
+            echo "🗑️ Menghapus node_modules..."
+            rm -rf node_modules
+
+            echo "🗑️ Menghapus file development & testing..."
+            rm -rf tests
+            rm -rf .github
+            rm -rf .deploy_private
+            rm -rf .deploy_publik
+            rm -f phpunit.xml
+            rm -f phpunit.xml.dist
+            rm -f .phpunit.result.cache
+            rm -f jest.config.js
+            rm -f vite.config.js
+            rm -f postcss.config.js
+            rm -f tailwind.config.js
+            rm -f package.json
+            rm -f package-lock.json
+            rm -f composer.json
+            rm -f composer.lock
+
+            echo "🗑️ Menghapus file dokumentasi & source yang tidak perlu..."
+            rm -rf resources/js
+            rm -rf resources/css
+            rm -f README.md
+            rm -f CHANGELOG.md
+            rm -f .editorconfig
+            rm -f .gitattributes
+            rm -f .gitignore
+
+            echo "🗑️ Membersihkan cache composer yang tidak perlu..."
+            rm -rf vendor/composer/installers
+            find vendor -name "*.md" -type f -delete
+            find vendor -name "*.txt" -type f -not -name "LICENSE.txt" -delete
+            find vendor -name "CHANGELOG*" -type f -delete
+            find vendor -name "UPGRADE*" -type f -delete
+            find vendor -name "*.dist" -type f -delete
+            find vendor -name "phpunit.xml*" -type f -delete
+            find vendor -name "Makefile" -type f -delete
+            find vendor -name ".github" -type d -exec rm -rf {} + 2>/dev/null || true
+            find vendor -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true
+            find vendor -name "Tests" -type d -exec rm -rf {} + 2>/dev/null || true
+            find vendor -name "test" -type d -exec rm -rf {} + 2>/dev/null || true
+            find vendor -name "docs" -type d -exec rm -rf {} + 2>/dev/null || true
+            find vendor -name "doc" -type d -exec rm -rf {} + 2>/dev/null || true
+            find vendor -name "examples" -type d -exec rm -rf {} + 2>/dev/null || true
+
+            echo "✅ Cleanup selesai!"
