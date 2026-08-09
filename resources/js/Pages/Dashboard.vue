@@ -72,11 +72,11 @@ const bukuSeringDipinjam = ref([
             <h2 class="font-cabinet retro-title">Dashboard</h2>
         </template>
 
-        <div class="retro-stat-grid">
+        <div class="retro-stat-grid stagger-fade">
             <StatCard v-for="s in stats" :key="s.label" v-bind="s" />
         </div>
 
-        <div class="retro-row">
+        <div class="retro-row stagger-fade">
             <RetroCard>
                 <h3 class="font-cabinet retro-panel-title">
                     Buku Belum Dikembalikan

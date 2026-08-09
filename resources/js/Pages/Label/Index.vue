@@ -12,9 +12,6 @@ const props = defineProps({
 
 const page = usePage();
 const errorMsg = computed(() => page.props.errors?.ids);
-const csrfToken = computed(
-    () => document.querySelector('meta[name="csrf-token"]')?.content ?? "",
-);
 
 // ==== Search debounce (sama pola dengan Inventory) ====
 const search = ref(props.filters?.search ?? "");
@@ -92,14 +89,13 @@ function submitExport() {
 
         <div v-if="errorMsg" class="retro-alert">{{ errorMsg }}</div>
 
-        <!-- form asli, submit native (bukan Inertia) supaya PDF terbuka di tab baru -->
+        <!-- GET, bukan POST: export cuma baca data, jadi tidak butuh CSRF -->
         <form
             ref="formEl"
             :action="route('label.export')"
-            method="POST"
+            method="GET"
             target="_blank"
         >
-            <input type="hidden" name="_token" :value="csrfToken" />
             <input
                 v-for="id in selectedIds"
                 :key="id"

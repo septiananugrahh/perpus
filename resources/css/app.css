@@ -23,3 +23,81 @@ body {
 .font-cabinet {
     font-family: "Space Grotesk", sans-serif;
 }
+
+/* ==== Animasi ringan saat pindah halaman ==== */
+#app {
+    animation: page-fade-in 0.25s ease both;
+}
+
+#app.page-transitioning {
+    opacity: 0;
+}
+
+@keyframes page-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hormati preferensi user yang mematikan animasi */
+@media (prefers-reduced-motion: reduce) {
+    #app {
+        animation: none;
+    }
+}
+
+/* ==== Animasi masuk untuk card/list saat halaman dimuat ==== */
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tempel class "stagger-fade" di elemen PARENT (grid/list),
+   setiap anak langsungnya otomatis animasi masuk berurutan */
+.stagger-fade > * {
+    animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-fade > *:nth-child(1) {
+    animation-delay: 0.03s;
+}
+.stagger-fade > *:nth-child(2) {
+    animation-delay: 0.08s;
+}
+.stagger-fade > *:nth-child(3) {
+    animation-delay: 0.13s;
+}
+.stagger-fade > *:nth-child(4) {
+    animation-delay: 0.18s;
+}
+.stagger-fade > *:nth-child(5) {
+    animation-delay: 0.23s;
+}
+.stagger-fade > *:nth-child(6) {
+    animation-delay: 0.28s;
+}
+.stagger-fade > *:nth-child(7) {
+    animation-delay: 0.33s;
+}
+.stagger-fade > *:nth-child(8) {
+    animation-delay: 0.38s;
+}
+.stagger-fade > *:nth-child(n + 9) {
+    animation-delay: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stagger-fade > * {
+        animation: none;
+    }
+}

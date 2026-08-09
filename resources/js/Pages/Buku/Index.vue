@@ -82,7 +82,7 @@ function closeDetail() {
             </div>
         </template>
 
-        <RetroCard padding="0" rounded="24px">
+        <RetroCard padding="0" rounded="24px" class="stagger-fade">
             <BookListItem
                 v-for="b in bukus.data"
                 :key="b.id_buku"

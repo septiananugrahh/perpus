@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\GuruController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\IndukBukuController;
 use App\Http\Controllers\LabelController;
+use App\Http\Controllers\SantriController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -23,7 +25,16 @@ Route::get('/buku/template', [IndukBukuController::class, 'downloadTemplate'])->
 Route::post('/buku/upload-preview', [IndukBukuController::class, 'uploadPreview'])->name('buku.upload.preview');
 
 Route::get('/label', [LabelController::class, 'index'])->name('label.index');
-Route::post('/label/export', [LabelController::class, 'export'])->name('label.export');
+Route::get('/label/export', [LabelController::class, 'export'])->name('label.export');
+
+Route::get('/santri', [SantriController::class, 'index'])->name('santri.index');
+Route::get('/santri/{id}', [SantriController::class, 'show'])->name('santri.show');
+Route::post('/santri/refresh', [SantriController::class, 'refresh'])->name('santri.refresh');
+
+Route::get('/guru', [GuruController::class, 'index'])->name('guru.index');
+Route::get('/guru/{guruNo}', [GuruController::class, 'show'])->name('guru.show');
+Route::post('/guru/refresh', [GuruController::class, 'refresh'])->name('guru.refresh');
+
 
 
 Route::get('/dashboard', function () {

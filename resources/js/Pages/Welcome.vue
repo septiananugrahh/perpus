@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
-import RetroButton from '@/Components/Retro/RetroButton.vue';
+import { Head, Link } from "@inertiajs/vue3";
+import RetroButton from "@/Components/Retro/RetroButton.vue";
 
 defineProps({
     canLogin: { type: Boolean },
@@ -8,9 +8,24 @@ defineProps({
 });
 
 const features = [
-    { icon: '📖', title: 'Katalog Lengkap', desc: 'Kelola ribuan judul buku dengan data yang rapi dan terstruktur.', color: 'pink' },
-    { icon: '🔄', title: 'Peminjaman Realtime', desc: 'Pantau status pinjam, terlambat, dan pengembalian secara langsung.', color: 'cyan' },
-    { icon: '📊', title: 'Laporan & Statistik', desc: 'Lihat buku paling sering dipinjam dan tren peminjaman harian.', color: 'yellow' },
+    {
+        icon: "📖",
+        title: "Katalog Lengkap",
+        desc: "Kelola ribuan judul buku dengan data yang rapi dan terstruktur.",
+        color: "pink",
+    },
+    {
+        icon: "🔄",
+        title: "Peminjaman Realtime",
+        desc: "Pantau status pinjam, terlambat, dan pengembalian secara langsung.",
+        color: "cyan",
+    },
+    {
+        icon: "📊",
+        title: "Laporan & Statistik",
+        desc: "Lihat buku paling sering dipinjam dan tren peminjaman harian.",
+        color: "yellow",
+    },
 ];
 </script>
 
@@ -21,7 +36,9 @@ const features = [
         <header class="retro-welcome__header">
             <div class="retro-welcome__brand">
                 <div class="retro-welcome__logo">📚</div>
-                <span class="font-cabinet retro-welcome__title">LibraryHub</span>
+                <span class="font-cabinet retro-welcome__title"
+                    >LibraryHub</span
+                >
             </div>
             <div class="retro-welcome__actions">
                 <Link v-if="canLogin" :href="route('login')">
@@ -35,22 +52,40 @@ const features = [
 
         <section class="retro-hero">
             <h1 class="font-cabinet retro-hero__title">
-                Sistem Perpustakaan yang <span class="retro-hero__highlight">Rapi &amp; Menyenangkan</span>
+                Sistem Perpustakaan yang
+                <span class="retro-hero__highlight"
+                    >Rapi &amp; Menyenangkan</span
+                >
             </h1>
             <p class="retro-hero__subtitle">
-                Kelola induk buku, peminjaman, dan laporan perpustakaan dalam satu dashboard yang simpel.
+                Kelola induk buku, peminjaman, dan laporan perpustakaan dalam
+                satu dashboard yang simpel.
             </p>
             <Link v-if="canLogin" :href="route('login')">
-                <RetroButton variant="color" color="yellow" class="retro-hero__cta">Masuk ke Dashboard →</RetroButton>
+                <RetroButton
+                    variant="color"
+                    color="yellow"
+                    class="retro-hero__cta"
+                    >Masuk ke Dashboard →</RetroButton
+                >
             </Link>
         </section>
 
-        <section class="retro-features">
-            <div v-for="f in features" :key="f.title" class="retro-feature-card">
-                <div class="retro-feature-card__icon" :style="{ background: `var(--retro-${f.color})` }">
+        <section class="retro-features stagger-fade">
+            <div
+                v-for="f in features"
+                :key="f.title"
+                class="retro-feature-card"
+            >
+                <div
+                    class="retro-feature-card__icon"
+                    :style="{ background: `var(--retro-${f.color})` }"
+                >
                     {{ f.icon }}
                 </div>
-                <h3 class="font-cabinet retro-feature-card__title">{{ f.title }}</h3>
+                <h3 class="font-cabinet retro-feature-card__title">
+                    {{ f.title }}
+                </h3>
                 <p class="retro-feature-card__desc">{{ f.desc }}</p>
             </div>
         </section>
@@ -134,7 +169,9 @@ const features = [
     gap: 24px;
 }
 @media (min-width: 768px) {
-    .retro-features { grid-template-columns: repeat(3, 1fr); }
+    .retro-features {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .retro-feature-card {

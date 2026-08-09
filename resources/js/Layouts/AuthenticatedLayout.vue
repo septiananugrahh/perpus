@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import Dropdown from "@/Components/Dropdown.vue";
-import DropdownLink from "@/Components/DropdownLink.vue";
+import DropdownLink from "@/Components/Retro/RetroDropdownLink.vue";
 import { Link } from "@inertiajs/vue3";
 
 const showingNavigationDropdown = ref(false);
@@ -10,9 +10,8 @@ const menu = [
     { label: "Dashboard", route: "dashboard" },
     { label: "Inventory", route: "buku.index" },
     { label: "Input Buku", route: "buku.create" },
-    { label: "Santri List", route: "dashboard" },
-    { label: "Reports", route: "dashboard" },
-    { label: "Export Label", route: "label.index" },
+    { label: "Santri List", route: "santri.index" },
+    { label: "Guru List", route: "guru.index" },
 ];
 </script>
 
