@@ -126,6 +126,11 @@ const props = defineProps({
                                     r.buku?.judul_buku ??
                                     `#${r.id_barang} (buku tidak ditemukan)`
                                 }}
+                                <span
+                                    v-if="r.buku?.deleted_at"
+                                    class="retro-deleted-tag"
+                                    >Buku Dihapus</span
+                                >
                             </td>
                             <td>{{ r.tgl_pinjam }}</td>
                             <td>{{ r.tgl_kembali || "-" }}</td>
@@ -293,6 +298,18 @@ const props = defineProps({
 }
 .retro-status-badge--done {
     background: var(--retro-green);
+}
+
+.retro-deleted-tag {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f5f5f5;
+    color: var(--retro-muted);
+    border: 1px solid #ddd;
 }
 
 .retro-empty {

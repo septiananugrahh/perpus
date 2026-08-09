@@ -4,8 +4,9 @@ import RetroCard from "@/Components/Retro/RetroCard.vue";
 import RetroButton from "@/Components/Retro/RetroButton.vue";
 import BookListItem from "@/Components/Retro/BookListItem.vue";
 import BookDetailModal from "@/Components/Retro/BookDetailModal.vue";
+import ConfirmDeleteModal from "@/Components/Retro/ConfirmDeleteModal.vue";
 import { Head, Link, router } from "@inertiajs/vue3";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps({
     bukus: { type: Object, required: true },
@@ -19,16 +20,11 @@ let debounceTimer = null;
 
 watch(search, (value) => {
     clearTimeout(debounceTimer);
-
-    // reset ke daftar penuh saat input dikosongkan
     if (value.length === 0) {
         debounceTimer = setTimeout(() => runSearch(""), 300);
         return;
     }
-
-    // baru cari setelah minimal 3 huruf
     if (value.length < 3) return;
-
     debounceTimer = setTimeout(() => runSearch(value), 400);
 });
 
@@ -50,6 +46,7 @@ const showModal = ref(false);
 const selectedBuku = ref(null);
 
 function openDetail(buku) {
+    if (selectMode.value) return; // di mode pilih, klik = toggle checkbox bukan buka detail
     selectedBuku.value = buku;
     showModal.value = true;
 }
@@ -57,6 +54,75 @@ function openDetail(buku) {
 function closeDetail() {
     showModal.value = false;
     selectedBuku.value = null;
+}
+
+// ==== Mode pilih (multi-select) ====
+const selectMode = ref(false);
+const selectedIds = ref([]);
+
+function toggleSelectMode() {
+    selectMode.value = !selectMode.value;
+    if (!selectMode.value) selectedIds.value = [];
+}
+
+function toggleSelect(id) {
+    const i = selectedIds.value.indexOf(id);
+    if (i === -1) selectedIds.value.push(id);
+    else selectedIds.value.splice(i, 1);
+}
+
+// ==== Hapus (single & bulk pakai modal konfirmasi yang sama) ====
+const showDeleteModal = ref(false);
+const deleteTarget = ref(null); // { mode: 'single'|'bulk', id?, count? }
+const deleting = ref(false);
+
+function askDeleteSingle(buku) {
+    deleteTarget.value = {
+        mode: "single",
+        id: buku.id_buku,
+        judul: buku.judul_buku,
+    };
+    showDeleteModal.value = true;
+}
+
+function askDeleteBulk() {
+    if (selectedIds.value.length === 0) return;
+    deleteTarget.value = { mode: "bulk", count: selectedIds.value.length };
+    showDeleteModal.value = true;
+}
+
+const deleteMessage = computed(() => {
+    if (!deleteTarget.value) return "";
+    return deleteTarget.value.mode === "single"
+        ? `Buku "${deleteTarget.value.judul}" akan dihapus. Buku tetap muncul di riwayat peminjaman santri/guru, tapi hilang dari daftar inventory.`
+        : `${deleteTarget.value.count} buku akan dihapus. Semua tetap muncul di riwayat peminjaman, tapi hilang dari daftar inventory.`;
+});
+
+function confirmDelete() {
+    deleting.value = true;
+
+    if (deleteTarget.value.mode === "single") {
+        router.delete(route("buku.destroy", deleteTarget.value.id), {
+            onFinish: () => {
+                deleting.value = false;
+                showDeleteModal.value = false;
+                closeDetail();
+            },
+        });
+    } else {
+        router.post(
+            route("buku.bulk-destroy"),
+            { ids: selectedIds.value },
+            {
+                onFinish: () => {
+                    deleting.value = false;
+                    showDeleteModal.value = false;
+                    selectedIds.value = [];
+                    selectMode.value = false;
+                },
+            },
+        );
+    }
 }
 </script>
 
@@ -67,9 +133,35 @@ function closeDetail() {
         <template #header>
             <div class="retro-header-row">
                 <h2 class="font-cabinet retro-title">Inventory Buku</h2>
-                <Link :href="route('buku.create')">
-                    <RetroButton variant="primary">+ Input Buku</RetroButton>
-                </Link>
+                <div class="retro-header-actions">
+                    <RetroButton
+                        v-if="!selectMode"
+                        variant="secondary"
+                        @click="toggleSelectMode"
+                    >
+                        🗑️ Hapus Buku
+                    </RetroButton>
+                    <template v-else>
+                        <RetroButton
+                            variant="secondary"
+                            @click="toggleSelectMode"
+                            >Batal</RetroButton
+                        >
+                        <RetroButton
+                            variant="color"
+                            color="red"
+                            :disabled="selectedIds.length === 0"
+                            @click="askDeleteBulk"
+                        >
+                            Hapus {{ selectedIds.length }} Buku
+                        </RetroButton>
+                    </template>
+                    <Link :href="route('buku.create')">
+                        <RetroButton variant="primary"
+                            >+ Input Buku</RetroButton
+                        >
+                    </Link>
+                </div>
             </div>
 
             <div class="retro-search-wrap">
@@ -94,7 +186,10 @@ function closeDetail() {
                 :klasifikasi="b.klasifikasi_buku"
                 :nomor-panggil="b.nomerpanggil_buku"
                 :subkategori-label="subkategori[b.kode_subkategori] ?? '-'"
+                :selectable="selectMode"
+                :selected="selectedIds.includes(b.id_buku)"
                 @click="openDetail(b)"
+                @toggle-select="toggleSelect(b.id_buku)"
             />
             <div v-if="bukus.data.length === 0" class="retro-empty">
                 {{
@@ -126,6 +221,26 @@ function closeDetail() {
                 subkategori[selectedBuku?.kode_subkategori] ?? '-'
             "
             @close="closeDetail"
+        >
+            <template #footer>
+                <RetroButton
+                    variant="color"
+                    color="red"
+                    @click="askDeleteSingle(selectedBuku)"
+                >
+                    🗑️ Hapus Buku Ini
+                </RetroButton>
+            </template>
+        </BookDetailModal>
+
+        <ConfirmDeleteModal
+            :show="showDeleteModal"
+            title="Hapus Buku?"
+            :message="deleteMessage"
+            confirm-text="hapus buku"
+            :processing="deleting"
+            @close="showDeleteModal = false"
+            @confirm="confirmDelete"
         />
     </AuthenticatedLayout>
 </template>
@@ -142,6 +257,11 @@ function closeDetail() {
     font-size: 32px;
     font-weight: 800;
     color: #1a1a1a;
+}
+.retro-header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .retro-search-wrap {

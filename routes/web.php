@@ -35,6 +35,9 @@ Route::get('/guru', [GuruController::class, 'index'])->name('guru.index');
 Route::get('/guru/{guruNo}', [GuruController::class, 'show'])->name('guru.show');
 Route::post('/guru/refresh', [GuruController::class, 'refresh'])->name('guru.refresh');
 
+Route::delete('/buku/{buku}', [IndukBukuController::class, 'destroy'])->name('buku.destroy');
+Route::post('/buku/bulk-delete', [IndukBukuController::class, 'bulkDestroy'])->name('buku.bulk-destroy');
+
 
 
 Route::get('/dashboard', function () {

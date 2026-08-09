@@ -66,7 +66,7 @@ class SantriController extends Controller
       abort(404, 'Santri tidak ditemukan.');
     }
 
-    $riwayat = PeminjamanBuku::with('buku')
+    $riwayat = PeminjamanBuku::with(['buku' => fn($q) => $q->withTrashed()])
       ->where('penanggung_jawab', $id)
       ->orderByDesc('id_peminjaman')
       ->get();

@@ -110,9 +110,21 @@ class IndukBukuController extends Controller
         $sheet->setTitle('Data Buku');
         $sheet->fromArray(array_values($this->columns), null, 'A1');
         $sheet->fromArray([
-            '2024-08-27', '1', 'Contoh Judul Buku', '2X1.12', 'Penerbit Contoh',
-            'Nama Pengarang', 'Penulis', '1', '2024', 'Ponorogo', '978-000-000',
-            '2X1.12 CON c', '1', '', 'Hibah',
+            '2024-08-27',
+            '1',
+            'Contoh Judul Buku',
+            '2X1.12',
+            'Penerbit Contoh',
+            'Nama Pengarang',
+            'Penulis',
+            '1',
+            '2024',
+            'Ponorogo',
+            '978-000-000',
+            '2X1.12 CON c',
+            '1',
+            '',
+            'Hibah',
         ], null, 'A2');
         foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
@@ -160,7 +172,7 @@ class IndukBukuController extends Controller
 
         foreach ($dataRows as $i => $cells) {
             // lewati baris yang benar-benar kosong semua
-            if (count(array_filter($cells, fn ($v) => trim((string) $v) !== '')) === 0) {
+            if (count(array_filter($cells, fn($v) => trim((string) $v) !== '')) === 0) {
                 continue;
             }
 
@@ -185,5 +197,32 @@ class IndukBukuController extends Controller
             'errors' => $errors,
             'valid' => ! $hasError && count($rows) > 0,
         ]);
+    }
+
+    // Hapus 1 buku (soft delete — masih ada di DB, tapi hilang dari listing)
+    public function destroy(IndukBuku $buku)
+    {
+        $judul = $buku->judul_buku;
+        $buku->delete();
+
+        return redirect()
+            ->route('buku.index')
+            ->with('success', "Buku \"{$judul}\" berhasil dihapus.");
+    }
+
+    // Hapus banyak buku sekaligus (dari checkbox multi-select)
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $count = IndukBuku::whereIn('id_buku', $validated['ids'])->count();
+        IndukBuku::whereIn('id_buku', $validated['ids'])->delete();
+
+        return redirect()
+            ->route('buku.index')
+            ->with('success', "{$count} buku berhasil dihapus.");
     }
 }

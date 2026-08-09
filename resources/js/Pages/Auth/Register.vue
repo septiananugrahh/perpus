@@ -91,7 +91,7 @@ const submit = () => {
                     :message="form.errors.password_confirmation"
                 />
             </div> -->
-
+            halaman ini di-nonaktifkan oleh admin
             <div class="mt-4 flex items-center justify-end">
                 <Link
                     :href="route('login')"

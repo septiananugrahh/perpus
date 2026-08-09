@@ -1,31 +1,51 @@
 <script setup>
 defineProps({
     judul: { type: String, required: true },
-    pengarang: { type: String, default: '' },
-    tahun: { type: String, default: '' },
-    isbn: { type: String, default: '' },
-    penerbit: { type: String, default: '' },
-    klasifikasi: { type: String, default: '' },
-    nomorPanggil: { type: String, default: '' },
-    subkategoriLabel: { type: String, default: '-' },
+    pengarang: { type: String, default: "" },
+    tahun: { type: String, default: "" },
+    isbn: { type: String, default: "" },
+    penerbit: { type: String, default: "" },
+    klasifikasi: { type: String, default: "" },
+    nomorPanggil: { type: String, default: "" },
+    subkategoriLabel: { type: String, default: "-" },
+    selectable: { type: Boolean, default: false },
+    selected: { type: Boolean, default: false },
 });
 
-defineEmits(['click']);
+defineEmits(["click", "toggle-select"]);
 </script>
 
 <template>
-    <div class="retro-book-item" @click="$emit('click')">
+    <div
+        class="retro-book-item"
+        :class="{ 'retro-book-item--selected': selectable && selected }"
+        @click="$emit('click')"
+    >
+        <input
+            v-if="selectable"
+            type="checkbox"
+            class="retro-book-item__checkbox"
+            :checked="selected"
+            @click.stop
+            @change="$emit('toggle-select')"
+        />
         <div class="retro-book-item__info">
             <h4 class="retro-book-item__title">{{ judul }}</h4>
             <p class="retro-book-item__meta">
-                {{ pengarang || '-' }} • {{ tahun || '-' }}<span v-if="isbn"> • ISBN: {{ isbn }}</span>
+                {{ pengarang || "-" }} • {{ tahun || "-"
+                }}<span v-if="isbn"> • ISBN: {{ isbn }}</span>
             </p>
             <p class="retro-book-item__meta-secondary">
-                {{ penerbit || '-' }}<span v-if="nomorPanggil"> • No. Panggil: {{ nomorPanggil }}</span>
+                {{ penerbit || "-"
+                }}<span v-if="nomorPanggil">
+                    • No. Panggil: {{ nomorPanggil }}</span
+                >
             </p>
         </div>
         <div class="retro-book-item__right">
-            <span v-if="klasifikasi" class="retro-book-item__tag">{{ klasifikasi }}</span>
+            <span v-if="klasifikasi" class="retro-book-item__tag">{{
+                klasifikasi
+            }}</span>
             <span class="retro-book-item__status">{{ subkategoriLabel }}</span>
             <span class="retro-book-item__chevron">›</span>
         </div>
@@ -48,6 +68,16 @@ defineEmits(['click']);
 }
 .retro-book-item:last-child {
     border-bottom: none;
+}
+.retro-book-item--selected {
+    background: #fff8e1;
+}
+
+.retro-book-item__checkbox {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
 }
 
 .retro-book-item__info {
@@ -91,7 +121,9 @@ defineEmits(['click']);
     display: none;
 }
 @media (min-width: 640px) {
-    .retro-book-item__status { display: inline; }
+    .retro-book-item__status {
+        display: inline;
+    }
 }
 .retro-book-item__chevron {
     font-size: 20px;

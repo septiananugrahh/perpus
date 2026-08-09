@@ -64,7 +64,7 @@ class GuruController extends Controller
       abort(404, 'Guru tidak ditemukan.');
     }
 
-    $riwayat = PeminjamanBuku::with('buku')
+    $riwayat = PeminjamanBuku::with(['buku' => fn($q) => $q->withTrashed()])
       ->where('penanggung_jawab', 'G' . $guruNo)
       ->orderByDesc('id_peminjaman')
       ->get();
