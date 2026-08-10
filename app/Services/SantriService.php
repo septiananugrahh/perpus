@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 class SantriService
 {
   // Tahun ajar di-hardcode dulu sesuai permintaan, nanti bisa dipindah ke .env/config
-  const TAHUN_AJAR = '2025/2026';
+  const TAHUN_AJAR = '2026/2027';
 
   const CACHE_KEY = 'santri_list_' . self::TAHUN_AJAR;
   const API_URL = 'https://saicponorogo.com/SIAM/admin/SiswaPublic/all';
