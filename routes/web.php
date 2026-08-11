@@ -8,6 +8,9 @@ use Inertia\Inertia;
 use App\Http\Controllers\IndukBukuController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\SantriController;
+use App\Http\Controllers\PeminjamanController;
+use App\Http\Controllers\DashboardController;
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -17,6 +20,14 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+
+Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
+Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
+Route::post('/peminjaman/kembalikan', [PeminjamanController::class, 'kembalikan'])->name('peminjaman.kembalikan');
+Route::get('/peminjaman/cari-buku', [PeminjamanController::class, 'cariBuku'])->name('peminjaman.cari-buku');
+Route::get('/peminjaman/cari-peminjam', [PeminjamanController::class, 'cariPeminjam'])->name('peminjaman.cari-peminjam');
+Route::get('/peminjaman/cari-buku-nama', [PeminjamanController::class, 'cariBukuNama'])->name('peminjaman.cari-buku-nama');
+Route::get('/peminjaman/cari-peminjam-nama', [PeminjamanController::class, 'cariPeminjamNama'])->name('peminjaman.cari-peminjam-nama');
 
 Route::get('/buku', [IndukBukuController::class, 'index'])->name('buku.index');
 Route::get('/buku/input', [IndukBukuController::class, 'create'])->name('buku.create');
@@ -39,10 +50,10 @@ Route::delete('/buku/{buku}', [IndukBukuController::class, 'destroy'])->name('bu
 Route::post('/buku/bulk-delete', [IndukBukuController::class, 'bulkDestroy'])->name('buku.bulk-destroy');
 
 
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

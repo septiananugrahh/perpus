@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@quasar/extras": "^2.0.2",
+        "html5-qrcode": "^2.3.8",
         "quasar": "^2.24.0"
     }
 }

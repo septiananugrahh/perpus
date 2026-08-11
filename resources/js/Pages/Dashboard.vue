@@ -3,65 +3,13 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import StatCard from "@/Components/Retro/StatCard.vue";
 import RetroCard from "@/Components/Retro/RetroCard.vue";
 import { Head } from "@inertiajs/vue3";
-import { ref } from "vue";
 
-const stats = ref([
-    {
-        label: "Buku Dimiliki",
-        value: 1112,
-        delta: "18.2%",
-        deltaText: "dari minggu lalu",
-        tone: "up",
-        color: "pink",
-        icon: "📖",
-    },
-    {
-        label: "Dipinjam Hari Ini",
-        value: 8,
-        delta: "8.7%",
-        deltaText: "dari kemarin",
-        tone: "down",
-        color: "cyan",
-        icon: "🔄",
-    },
-    {
-        label: "Asatidz",
-        value: 45,
-        delta: "4.3%",
-        deltaText: "dari tahun lalu",
-        tone: "up",
-        color: "yellow",
-        icon: "🎓",
-    },
-    {
-        label: "Santri",
-        value: 268,
-        delta: "2.5%",
-        deltaText: "dari tahun lalu",
-        tone: "down",
-        color: "purple",
-        icon: "👥",
-    },
-]);
-
-const statusBuku = ref([
-    { label: "Dipinjam", durasi: "2 hari", percent: 39.7, color: "pink" },
-    { label: "Terlambat", durasi: "3 hari", percent: 28.3, color: "red" },
-    { label: "Diperpanjang", durasi: "1 hari", percent: 17.4, color: "cyan" },
-    {
-        label: "Menunggu Konfirmasi",
-        durasi: "5 hari",
-        percent: 14.6,
-        color: "yellow",
-    },
-]);
-
-const bukuSeringDipinjam = ref([
-    { no: 1, nama: "Tata Surya", jumlah: 20 },
-    { no: 2, nama: "Fiqih Ibadah", jumlah: 17 },
-    { no: 3, nama: "Sejarah Nabi", jumlah: 15 },
-    { no: 4, nama: "Bahasa Arab Dasar", jumlah: 12 },
-]);
+const props = defineProps({
+    stats: { type: Array, default: () => [] },
+    statusBuku: { type: Array, default: () => [] },
+    bukuSeringDipinjam: { type: Array, default: () => [] },
+    totalPeminjamanBulanIni: { type: Number, default: 0 },
+});
 </script>
 
 <template>
@@ -79,49 +27,57 @@ const bukuSeringDipinjam = ref([
         <div class="retro-row stagger-fade">
             <RetroCard>
                 <h3 class="font-cabinet retro-panel-title">
-                    Buku Belum Dikembalikan
+                    Buku Sedang Dipinjam
                 </h3>
 
-                <div class="retro-progress">
-                    <div
-                        v-for="s in statusBuku"
-                        :key="s.label"
-                        class="retro-progress__seg"
-                        :style="{
-                            width: s.percent + '%',
-                            background: `var(--retro-${s.color})`,
-                        }"
-                    >
-                        {{ s.percent }}%
-                    </div>
-                </div>
-
-                <div>
-                    <div
-                        v-for="s in statusBuku"
-                        :key="s.label"
-                        class="retro-status-row"
-                    >
-                        <span class="retro-status-row__label">{{
-                            s.label
-                        }}</span>
-                        <span class="retro-status-row__durasi">{{
-                            s.durasi
-                        }}</span>
-                        <span class="retro-status-row__percent"
-                            >{{ s.percent }}%</span
+                <div v-if="statusBuku.length > 0">
+                    <div class="retro-progress">
+                        <div
+                            v-for="s in statusBuku"
+                            :key="s.label"
+                            class="retro-progress__seg"
+                            :style="{
+                                width: s.percent + '%',
+                                background: `var(--retro-${s.color})`,
+                            }"
                         >
+                            {{ s.percent }}%
+                        </div>
+                    </div>
+
+                    <div>
+                        <div
+                            v-for="s in statusBuku"
+                            :key="s.label"
+                            class="retro-status-row"
+                        >
+                            <span class="retro-status-row__label">{{
+                                s.label
+                            }}</span>
+                            <span class="retro-status-row__durasi"
+                                >{{ s.jumlah }} buku</span
+                            >
+                            <span class="retro-status-row__percent"
+                                >{{ s.percent }}%</span
+                            >
+                        </div>
                     </div>
                 </div>
+                <p v-else class="retro-empty-inline">
+                    Tidak ada buku yang sedang dipinjam saat ini.
+                </p>
             </RetroCard>
 
             <RetroCard>
                 <h3 class="font-cabinet retro-panel-title">
-                    Grafik Peminjaman Harian
+                    Peminjaman Bulan Ini
                 </h3>
-                <p class="retro-panel-subtitle">Total bulan ini: 238</p>
-                <div class="retro-chart-placeholder">
-                    [ Chart Peminjaman Harian ]
+                <p class="retro-panel-subtitle">
+                    Total transaksi peminjaman bulan berjalan
+                </p>
+                <div class="retro-big-number">
+                    {{ totalPeminjamanBulanIni }}
+                    <span class="retro-big-number__label">peminjaman</span>
                 </div>
             </RetroCard>
         </div>
@@ -130,7 +86,7 @@ const bukuSeringDipinjam = ref([
             <h3 class="font-cabinet retro-panel-title retro-panel-title--bleed">
                 Buku Paling Sering Dipinjam
             </h3>
-            <div class="retro-table-bleed">
+            <div v-if="bukuSeringDipinjam.length > 0" class="retro-table-bleed">
                 <table class="retro-table">
                     <thead>
                         <tr>
@@ -148,6 +104,9 @@ const bukuSeringDipinjam = ref([
                     </tbody>
                 </table>
             </div>
+            <p v-else class="retro-empty-inline">
+                Belum ada riwayat peminjaman.
+            </p>
         </RetroCard>
     </AuthenticatedLayout>
 </template>
@@ -201,7 +160,6 @@ const bukuSeringDipinjam = ref([
     margin-bottom: 16px;
 }
 
-/* Card tetap punya padding, tapi tabel "bleed" ke tepi card */
 .retro-table-bleed {
     margin: 0 -24px -24px;
     overflow-x: auto;
@@ -210,6 +168,12 @@ const bukuSeringDipinjam = ref([
     font-size: 13px;
     color: var(--retro-text-secondary);
     margin-bottom: 16px;
+}
+
+.retro-empty-inline {
+    font-size: 13px;
+    color: var(--retro-muted);
+    padding: 20px 0;
 }
 
 .retro-progress {
@@ -253,15 +217,17 @@ const bukuSeringDipinjam = ref([
     font-weight: 700;
 }
 
-.retro-chart-placeholder {
-    height: 220px;
-    border: 2px dashed var(--retro-border);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--retro-muted);
-    font-size: 14px;
+.retro-big-number {
+    font-size: 48px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin-top: 8px;
+}
+.retro-big-number__label {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--retro-text-secondary);
+    margin-left: 8px;
 }
 
 .retro-table {

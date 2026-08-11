@@ -8,10 +8,12 @@ const showingNavigationDropdown = ref(false);
 
 const menu = [
     { label: "Dashboard", route: "dashboard" },
+    { label: "Peminjaman Buku", route: "peminjaman.index" },
     { label: "Inventory", route: "buku.index" },
     { label: "Input Buku", route: "buku.create" },
     { label: "Santri List", route: "santri.index" },
     { label: "Guru List", route: "guru.index" },
+    { label: "Reports", route: "dashboard" },
 ];
 </script>
 
