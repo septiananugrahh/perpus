@@ -22,6 +22,8 @@ Route::get('/', function () {
 });
 
 Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
+Route::get('/peminjaman/riwayat', [PeminjamanController::class, 'riwayat'])->name('peminjaman.riwayat');
+Route::get('/peminjaman/riwayat/data', [PeminjamanController::class, 'riwayatData'])->name('peminjaman.riwayat.data');
 Route::post('/peminjaman', [PeminjamanController::class, 'store'])->name('peminjaman.store');
 Route::post('/peminjaman/kembalikan', [PeminjamanController::class, 'kembalikan'])->name('peminjaman.kembalikan');
 Route::get('/peminjaman/cari-buku', [PeminjamanController::class, 'cariBuku'])->name('peminjaman.cari-buku');

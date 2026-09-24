@@ -4,7 +4,7 @@ import RetroCard from "@/Components/Retro/RetroCard.vue";
 import RetroButton from "@/Components/Retro/RetroButton.vue";
 import PinjamModal from "@/Components/Retro/PinjamModal.vue";
 import KembaliModal from "@/Components/Retro/KembaliModal.vue";
-import { Head } from "@inertiajs/vue3";
+import { Head, Link } from "@inertiajs/vue3";
 import { ref } from "vue";
 
 const props = defineProps({
@@ -43,6 +43,12 @@ function statusBadge(sisaHari) {
                     </p>
                 </div>
                 <div class="retro-header-actions">
+                    <Link :href="route('peminjaman.riwayat')">
+                        <RetroButton
+                            variant="secondary"
+                            >📜 Riwayat Peminjaman</RetroButton
+                        >
+                    </Link>
                     <RetroButton
                         variant="color"
                         color="cyan"

@@ -33,6 +33,105 @@ class PeminjamanController extends Controller
       'batasHariPinjam' => PeminjamanBuku::BATAS_HARI_PINJAM,
     ]);
   }
+  // Halaman riwayat peminjaman (Inertia, render pertama)
+  public function riwayat(Request $request)
+  {
+    $query = $this->queryRiwayatFiltered($request);
+
+    $loans = $query->paginate(20);
+    $nextUrl = $loans->hasMorePages()
+      ? route('peminjaman.riwayat.data', array_merge($request->query(), ['page' => $loans->currentPage() + 1]))
+      : null;
+
+    return Inertia::render('Peminjaman/Riwayat', [
+      'tanggal' => $request->get('tanggal'),
+      'tanggal_mulai' => $request->get('tanggal_mulai'),
+      'tanggal_selesai' => $request->get('tanggal_selesai'),
+      'loans' => [
+        'data' => $loans->through(fn($loan) => $this->formatLoanRiwayat($loan))->values(),
+        'next_page_url' => $nextUrl,
+      ],
+    ]);
+  }
+
+  // Data riwayat untuk infinite scroll (fetch halaman berikutnya)
+  public function riwayatData(Request $request)
+  {
+    $query = $this->queryRiwayatFiltered($request);
+
+    $loans = $query->paginate(20, ['*'], 'page', $request->integer('page', 1));
+
+    return response()->json([
+      'data' => $loans->through(fn($loan) => $this->formatLoanRiwayat($loan))->values(),
+      'next_page_url' => $loans->nextPageUrl(),
+    ]);
+  }
+
+  // Tanpa tanggal = tampilkan semua. Dengan rentang (tanggal_mulai/…)=filter rentang.
+  // Dengan hanya tanggal = filter satu hari. Tanggal tidak valid diabaikan.
+  protected function queryRiwayatFiltered(Request $request): \Illuminate\Database\Eloquent\Builder
+  {
+    $tanggalMulai = $request->get('tanggal_mulai');
+    $tanggalSelesai = $request->get('tanggal_selesai');
+    $tanggal = $request->get('tanggal');
+
+    $query = PeminjamanBuku::query()
+      ->with('buku')
+      ->orderByDesc('id_peminjaman');
+
+    if ($tanggalMulai || $tanggalSelesai) {
+      $mulai = $this->parseDateInput($tanggalMulai) ?? $this->parseDateInput($tanggal);
+      $selesai = $this->parseDateInput($tanggalSelesai);
+      if ($mulai) {
+        $query->whereDate('tgl_pinjam', '>=', $mulai->format('Y-m-d'));
+      }
+      if ($selesai) {
+        $query->whereDate('tgl_pinjam', '<=', $selesai->format('Y-m-d'));
+      }
+    } elseif ($tanggal) {
+      if ($parsed = $this->parseDateInput($tanggal)) {
+        $query->whereDate('tgl_pinjam', $parsed->format('Y-m-d'));
+      }
+    }
+
+    return $query;
+  }
+
+  protected function parseDateInput(?string $tanggal): ?\Carbon\Carbon
+  {
+    if (! $tanggal) {
+      return null;
+    }
+    try {
+      if ($parsed = \Carbon\Carbon::createFromFormat('Y-m-d', $tanggal)) {
+        return $parsed;
+      }
+    } catch (\Throwable $e) {
+      // abaikan, lanjut coba parse bebas
+    }
+    try {
+      return \Carbon\Carbon::parse($tanggal);
+    } catch (\Throwable $e) {
+      return null;
+    }
+  }
+
+  protected function formatLoanRiwayat(PeminjamanBuku $loan): array
+  {
+    $peminjam = $this->resolvePeminjamNama($loan->penanggung_jawab);
+
+    return [
+      'id_peminjaman' => $loan->id_peminjaman,
+      'judul_buku' => $loan->buku?->judul_buku ?? "#{$loan->id_barang} (buku tidak ditemukan)",
+      'id_barang' => $loan->id_barang,
+      'tgl_pinjam' => $loan->tgl_pinjam,
+      'tgl_kembali' => $loan->tgl_kembali,
+      'keterangan_peminjaman' => $loan->keterangan_peminjaman,
+      'peminjam_nama' => $peminjam['nama'],
+      'peminjam_meta' => $peminjam['meta'],
+      'peminjam_tipe' => $peminjam['tipe'],
+    ];
+  }
 
   // Cari buku dari kode barcode (dipanggil saat scan/ketik di modal pinjam & kembali)
   public function cariBuku(Request $request)
