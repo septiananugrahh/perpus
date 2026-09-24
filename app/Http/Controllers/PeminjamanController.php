@@ -83,14 +83,23 @@ class PeminjamanController extends Controller
       $mulai = $this->parseDateInput($tanggalMulai) ?? $this->parseDateInput($tanggal);
       $selesai = $this->parseDateInput($tanggalSelesai);
       if ($mulai) {
-        $query->whereDate('tgl_pinjam', '>=', $mulai->format('Y-m-d'));
+        $query->whereRaw(
+          "STR_TO_DATE(tgl_pinjam, '%d-%m-%Y %H:%i') >= ?",
+          [$mulai->format('Y-m-d') . ' 00:00:00']
+        );
       }
       if ($selesai) {
-        $query->whereDate('tgl_pinjam', '<=', $selesai->format('Y-m-d'));
+        $query->whereRaw(
+          "STR_TO_DATE(tgl_pinjam, '%d-%m-%Y %H:%i') <= ?",
+          [$selesai->format('Y-m-d') . ' 23:59:59']
+        );
       }
     } elseif ($tanggal) {
       if ($parsed = $this->parseDateInput($tanggal)) {
-        $query->whereDate('tgl_pinjam', $parsed->format('Y-m-d'));
+        $query->whereRaw(
+          "DATE(STR_TO_DATE(tgl_pinjam, '%d-%m-%Y %H:%i')) = ?",
+          [$parsed->format('Y-m-d')]
+        );
       }
     }
 
