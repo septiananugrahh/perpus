@@ -1,162 +1,109 @@
-# ai-memory Guide — How to Read & Use
+# ai-memory Guide — baca SEBELUM & SETELAH eksekusi + cara deploy
 
-## Session Start
+> Aturan pakai: **SEBELUM** menjalankan/menulis prompt, baca memori. **SETELAH** selesai eksekusi, tulis pembelajaran. Detail tiap langkah di bawah.
 
-Before coding, check what's been done:
+## 1. SEBELUM eksekusi (wajib dibaca dulu)
 
+Sebelum mengerjakan prompt apa pun, cek memori proyek:
+
+1. **`memory_query`** — cari kerjaan/putusan/gotcha relevan dengan prompt ini:
+   ```json
+   { "workspace": "default", "project": "perpus", "query": "<topik prompt>", "limit": 5 }
+   ```
+2. **`memory_recent`** — apa saja yang berubah belakangan (halaman terbaru).
+3. **`memory_briefing`** — ringkasan terstruktur: jumlah sesi, aktivitas 7/30 hari, pending handoff.
+4. **`memory_read_page`** — buka halaman penuh hasil pencarian yang relevan (bukan cuma snippet).
+5. **`memory_handoff_list`** — ada tidak handoff OPEN dari sesi/agent lain yang belum diklaim.
+
+Aturan: kalau halaman yang cocok ditemukan, BAca dulu sebelum menulis apa pun. Jangan terima snippet saja.
+
+## 2. SETELAH eksekusi (tulis kembali)
+
+Selesai mengerjakan prompt, lakukan:
+
+1. **Evaluasi hasil** — apa yang berubah, apa yang diputuskan, apa yang gagal.
+2. **`memory_write_page`** — tulis halaman durable HANYA kalau ada:
+   - keputusan/arsitektur baru (dan alternatif yang ditolak),
+   - aturan proyek ("jangan pakai X", "selalu Y"),
+   - gotcha non-trivial (misal: `whereDate()` gagal di string `d-m-Y` → pakai `STR_TO_DATE`).
+   ```json
+   { "workspace": "default", "project": "perpus", "path": "<path>.md", "body": "<isi>" }
+   ```
+3. **Jangan tulis** untuk: progres rutin, catatan sesi (hook otomatis tangkap), catatan sementara. Itu mencemari memori.
+4. Bila sesi panjang: **`memory_consolidate`** agar observasi jadi halaman wiki rapi.
+
+Terapkan: prompt berikutnya dimulai dari langkah §1 lagi — siklus baca→eksekusi→tulis.
+
+## 3. Cara Deploy (Hostinger via GitHub Actions)
+
+> Deploy OTOMATIS, tanpa langkah manual. Pemicunya: **commit berisi literal `[deploy]`**.
+
+### Langkah
+
+1. **Commit dengan suffix `[deploy]`**:
+   ```bash
+   git add -A
+   git commit -m "feat(namafitur): deskripsi
+
+   - perubahan A
+   - perubahan B
+
+   [deploy]"
+   ```
+2. **Push**:
+   ```bash
+   git push origin main
+   ```
+3. **Monitor** GitHub Actions: https://github.com/septiananugrahh/perpus/actions
+   - Trigger: `.github/workflows/laravel.yml`, step 9 cek `contains(head_commit.message, '[deploy]')`.
+   - Tanpa `[deploy]` → run "skipped" (aman untuk dev, tidak deploy).
+4. **Tunggu run selesai (green)** — composer, ziggy, key, npm build, rsync ke Hostinger, migrate, cache.
+5. **Verifikasi produksi**: https://perpus.saicponorogo.com → menu Peminjaman → Riwayat Peminjaman
+   - filter rentang (Hari Ini / Minggu Ini / Bulan Ini / custom),
+   - "Tampilkan semua data",
+   - infinite scroll (scroll bawah → halaman berikutnya termuat).
+
+### Kalau butuh deploy ulang commit lama
+Amend + force-push (tambah `[deploy]` ke pesan):
 ```bash
-# Check status
-php artisan ai-memory status
-
-# See recent pages
-php artisan ai-memory recent
-
-# Explore project state
-php artisan ai-memory explore
+git commit --amend --no-edit --message "… [deploy]"
+git push --force-with-lease origin main
 ```
 
-In agent context, read via MCP tools:
-- `memory_query` — search for prior work, decisions, gotchas
-- `memory_recent` — what changed lately
-- `memory_briefing` — structured summary (counts, pending handoffs)
-- `memory_read_page` — full page after finding via search
+## 4. Troubleshooting umum
 
-## When to Write Memory
+| Masalah | Penyebab | Solusi |
+|---------|----------|--------|
+| 404 di `/peminjaman/riwayat` | vhost salah (`localhost` bukan `perpus.test`) | pakai `http://perpus.test` |
+| `resp.data.data is undefined` | `next_page_url` nunjuk halaman Inertia HTML, bukan JSON | pastikan `riwayat()` timpa `next_page_url` ke `peminjaman.riwayat.data` |
+| Filter tanggal hasil 0 baris | `whereDate()` di MySQL NULL untuk string `d-m-Y` | `STR_TO_DATE(tgl_pinjam, '%d-%m-%Y %H:%i')` / `DATE(STR_TO_DATE(...))` |
+| `php artisan` gagal / exit 53 | binary PHP salah | `D:\laragon\bin\php\php-8.5.1-Win32-vs17-x64\php.exe` |
 
-Write durable pages **ONLY** when:
-- User explicitly asks to remember something permanently
-- Recording a project rule (e.g., "never use X", "always Y")
-- Saving a decision (architecture, trade-off, rejected alternative)
+## 5. Referensi tool MCP (ai-memory)
 
-**Do NOT** write memory for:
-- Normal progress updates
-- Session notes (already captured automatically by hooks)
-- Temporary notes (use a local file or temporary note with TTL)
+| Tool | Guna |
+|------|------|
+| `memory_query` | telusuri kerjaan/putusan/gotcha lama |
+| `memory_recent` | halaman terakhir diupdate |
+| `memory_briefing` | ringkasan terstruktur proyek |
+| `memory_explore` | digest prose bebas |
+| `memory_read_page` | baca isi penuh satu halaman |
+| `memory_write_page` | simpan pengetahuan durable |
+| `memory_consolidate` | rangkum observasi sesi jadi wiki |
+| `memory_lint` | audit kontradiksi / halaman basi |
+| `memory_handoff_*` | kirim/terima handoff antar agent |
 
-## Before Deployment (CI/CD)
+## 6. Scope proyek
 
-1. Run tests locally if available: `npm run test`, `php artisan test`
-2. Run lint: `npm run lint` (or linter config)
-3. Check build: `npm run build`
-4. Verify routes: `php artisan route:list --path=peminjaman`
-5. Check PHP lint: `php -l app/Http/Controllers/PeminjamanController.php`
-6. Test data endpoint: `curl http://perpus.test/peminjaman/riwayat/data?page=1`
-
-## Commit & Deploy
-
-### Step 1: Commit with [deploy] suffix
-
-```bash
-git commit -m "feat(peminjaman): riwayat peminjaman dengan filter rentang tanggal & infinite scroll
-
-- Controller: riwayat() & riwayatData() pakai queryRiwayatFiltered()
-  * tanpa parameter tanggal → tampilkan SEMUA peminjaman
-  * tanggal_mulai + tanggal_selesai → filter rentang (dari/sampai)
-  * hanya tanggal (legacy) → filter satu hari
-  * parseDateInput() non-throwing, invalid input diabaikan
-
-- Riwayat.vue baru (533 lines):
-  * UI dua mode: checkbox 'Tampilkan semua data' / rentang Dari–Sampai
-  * input type=date + tombol Terapkan + quick filter (Hari Ini/Minggu Ini/Bulan Ini)
-  * infinite scroll loadMore() pakai axios ke /riwayat/data?page=N
-  * defensive: same-origin normalize, Array guard, stop-loop on empty
-  * subtitle filterLabel menampilkan rentang aktif
-
-- Fix infinite scroll bug:
-  * riwayat() override next_page_url → peminjaman.riwayat.data endpoint
-  * sebelumnya pakai paginator default → /riwayat?page=2 (HTML) bukan JSON
-
-- routes/web.php: tambah GET /peminjaman/riwayat/data → riwayatData
-- CSS: .filter-card margin-bottom 16px jarak filter–tabel
-- Build passes (npm run build), PHP lint clean
-
-[deploy]"
-```
-
-### Step 2: Push to GitHub
-
-```bash
-git push origin main
-```
-
-### Step 3: Monitor CI/CD
-
-1. Go to https://github.com/septiananugrahh/perpus/actions
-2. Wait for "Laravel & Vue 3 CI/CD" to complete (green ✓)
-3. Check "Deploy to Hostinger" step for any errors
-
-### Step 4: Verify Production
-
-1. Visit https://perpus.saicponorogo.com
-2. Navigate to Peminjaman → Riwayat Peminjaman
-3. Test: filter range (Hari Ini/Minggu Ini/Bulan Ini/custom), "Tampilkan semua data", scroll
-
-## After Deployment
-
-If production shows issues:
-
-1. Check Laravel logs (Hostinger or via SSH)
-2. Clear cache: `php artisan config:clear route:clear view:clear`
-3. Re-run migrations if schema changed: `php artisan migrate`
-4. If critical, rollback via git revert or force deploy old commit with [deploy] suffix
-
-## Common Pitfalls
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| 404 on `/peminjaman/riwayat` | Vhost mismatch (`localhost` vs `perpus.test`) | Use correct domain; check nginx config |
-| `resp.data.data is undefined` | `next_page_url` points to Inertia HTML instead of JSON data endpoint | Ensure controller `riwayat()` rebuilds `next_page_url` to `peminjaman.riwayat.data` |
-| Date filter returns 0 rows | `whereDate()` on MySQL does NOT match `d-m-Y` string format | Use `STR_TO_DATE(tgl_pinjam, '%d-%m-%Y %H:%i')` or LIKE |
-| PHP artisan fails (exit 53) | Wrong PHP binary | Use `D:\laragon\bin\php\php-8.5.1-Win32-vs17-x64\php.exe` |
-
-## MCP Tools Reference
-
-| Tool | Purpose |
-|------|---------|
-| `memory_query` | Search for prior work, decisions, gotchas |
-| `memory_recent` | List most recently updated pages |
-| `memory_status` | Check if ai-memory is healthy |
-| `memory_briefing` | Structured snapshot (counts, windows, pending handoffs) |
-| `memory_explore` | Open-ended prose digest |
-| `memory_read_page` | Fetch full page body |
-| `memory_write_page` | Save durable project knowledge |
-| `memory_consolidate` | Compile session observations to wiki pages |
-| `memory_lint` | Audit wiki for contradictions, stale guidance |
-
-## AI Memory Scope
-
-This project uses:
-- **workspace**: `default`
-- **project**: `perpus`
-
-When querying AI Memory, pass `workspace` and `project` together:
+Semua panggilan ai-memory untuk proyek ini WAJIB menyertakan:
 ```json
-{
-  "workspace": "default",
-  "project": "perpus",
-  "query": "deploy hostinger",
-  "limit": 5
-}
+{ "workspace": "default", "project": "perpus" }
 ```
+Jangan andalkan "last active project" server — bisa salah resolve (default/scratch).
 
-## Quick Command Reference
+## 7. Ringkas alur satu prompt
 
-```bash
-# Check ai-memory health
-php artisan ai-memory status
-
-# See what was recently updated
-php artisan ai-memory recent
-
-# Search for prior work
-php artisan ai-memory query "deploy hostinger"
-
-# Explore project state (prose digest)
-php artisan ai-memory explore
-
-# Lint wiki for contradictions
-php artisan ai-memory lint
-
-# Run forget sweep (delete stale pages)
-php artisan ai-memory forget
-```
+1. Baca: `memory_query` → `memory_recent` → `memory_read_page` (bila relevan).
+2. Eksekusi prompt sesuai data.
+3. Tulis: `memory_write_page` bila ada keputusan/aturan/gotcha baru.
+4. Deploy (bila diminta): commit `[deploy]` → push → monitor Actions → verifikasi produksi.
