@@ -9,6 +9,7 @@ use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class IndukBukuController extends Controller
 {
@@ -224,5 +225,85 @@ class IndukBukuController extends Controller
         return redirect()
             ->route('buku.index')
             ->with('success', "{$count} buku berhasil dihapus.");
+    }
+
+    // ==================== EXPORT ====================
+
+    // Form pilih kolom & atur urutan (drag & drop di frontend)
+    public function exportForm(Request $request)
+    {
+        return Inertia::render('Buku/Export', [
+            'preview' => $this->filteredQuery($request)->limit(5)->get(),
+            'total' => $this->filteredQuery($request)->count(),
+            'columns' => $this->columns,
+            'subkategori' => IndukBuku::SUBKATEGORI,
+            'filters' => $request->only('search'),
+        ]);
+    }
+
+    // Download Excel sesuai kolom terpilih + urutannya
+    public function exportExcel(Request $request)
+    {
+        $validated = $request->validate([
+            'columns' => ['required', 'array', 'min:1'],
+            'columns.*' => ['string', 'in:' . implode(',', array_keys($this->columns))],
+        ]);
+
+        $query = $this->filteredQuery($request);
+
+        $bukus = $query->get();
+        if ($bukus->isEmpty()) {
+            return back()->withErrors(['columns' => 'Tidak ada data buku untuk diekspor.']);
+        }
+
+        $keys = $validated['columns'];
+        $lastCol = Coordinate::stringFromColumnIndex(count($keys));
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Buku');
+        $sheet->fromArray([array_map(fn ($k) => $this->columns[$k], $keys)], null, 'A1');
+        $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($bukus as $buku) {
+            $sheet->fromArray([array_map(fn ($k) => $buku->{$k}, $keys)], null, "A{$row}");
+            $row++;
+        }
+
+        if ($request->filled('search')) {
+            $spreadsheet->createSheet()->setTitle('Kriteria')->fromArray([['Pencarian', $request->string('search')->toString()]], null, 'A1');
+        }
+
+        foreach (range(1, count($keys)) as $i) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
+        }
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'export') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tempPath);
+
+        return response()
+            ->download($tempPath, 'data-buku-' . now()->format('Ymd-His') . '.xlsx')
+            ->deleteFileAfterSend(true);
+    }
+
+    // Query dasar listing buku (search sama seperti index)
+    protected function filteredQuery(Request $request)
+    {
+        $query = IndukBuku::query();
+
+        if ($request->filled('search')) {
+            $search = $request->string('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('judul_buku', 'like', "%{$search}%")
+                    ->orWhere('pengarang_buku', 'like', "%{$search}%")
+                    ->orWhere('penerbit_buku', 'like', "%{$search}%")
+                    ->orWhere('isbn_buku', 'like', "%{$search}%")
+                    ->orWhere('nomerpanggil_buku', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->orderByDesc('id_buku');
     }
 }

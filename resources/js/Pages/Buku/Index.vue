@@ -156,6 +156,9 @@ function confirmDelete() {
                             Hapus {{ selectedIds.length }} Buku
                         </RetroButton>
                     </template>
+                    <Link :href="route('buku.export.form')">
+                        <RetroButton variant="secondary">📥 Export Excel</RetroButton>
+                    </Link>
                     <Link :href="route('buku.create')">
                         <RetroButton variant="primary"
                             >+ Input Buku</RetroButton

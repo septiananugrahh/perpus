@@ -14,6 +14,7 @@ const menu = [
     { label: "Santri List", route: "santri.index" },
     { label: "Guru List", route: "guru.index" },
     { label: "Reports", route: "dashboard" },
+    { label: "Export Buku", route: "buku.export.form" },
 ];
 </script>
 

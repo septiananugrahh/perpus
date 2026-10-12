@@ -33,8 +33,10 @@ Route::get('/peminjaman/cari-peminjam-nama', [PeminjamanController::class, 'cari
 
 Route::get('/buku', [IndukBukuController::class, 'index'])->name('buku.index');
 Route::get('/buku/input', [IndukBukuController::class, 'create'])->name('buku.create');
-Route::post('/buku', [IndukBukuController::class, 'store'])->name('buku.store');
 Route::get('/buku/template', [IndukBukuController::class, 'downloadTemplate'])->name('buku.template');
+Route::get('/buku/export', [IndukBukuController::class, 'exportForm'])->name('buku.export.form');
+Route::get('/buku/export/download', [IndukBukuController::class, 'exportExcel'])->name('buku.export.download');
+Route::post('/buku', [IndukBukuController::class, 'store'])->name('buku.store');
 Route::post('/buku/upload-preview', [IndukBukuController::class, 'uploadPreview'])->name('buku.upload.preview');
 
 Route::get('/label', [LabelController::class, 'index'])->name('label.index');
