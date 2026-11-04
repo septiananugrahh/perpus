@@ -30,11 +30,11 @@ class LabelController extends Controller
         }
 
         if ($request->filled('tanggal_mulai')) {
-            $query->whereDate('tanggalpembukuan_buku', '>=', $request->string('tanggal_mulai'));
+            $query->whereRaw("STR_TO_DATE(tanggalpembukuan_buku, '%d-%m-%Y') >= STR_TO_DATE(?, '%d-%m-%Y')", [$request->string('tanggal_mulai')]);
         }
 
         if ($request->filled('tanggal_selesai')) {
-            $query->whereDate('tanggalpembukuan_buku', '<=', $request->string('tanggal_selesai'));
+            $query->whereRaw("STR_TO_DATE(tanggalpembukuan_buku, '%d-%m-%Y') <= STR_TO_DATE(?, '%d-%m-%Y')", [$request->string('tanggal_selesai')]);
         }
 
         return Inertia::render('Label/Index', [
