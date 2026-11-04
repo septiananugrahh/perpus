@@ -3,11 +3,10 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Lockout;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -25,7 +24,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
      */
     public function rules(): array
     {
@@ -38,56 +37,64 @@ class LoginRequest extends FormRequest
     /**
      * Attempt to authenticate the request's credentials.
      *
-     * @throws ValidationException
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(): void
-{
-    $this->ensureIsNotRateLimited();
+    {
+        $this->ensureIsNotRateLimited();
+        
+        $this->upgradePlainPassword();
 
-    $email = $this->input('email');
-    $password = $this->input('password');
+        $user = \App\Models\User::where('email', $this->email)->first();
 
-    $user = User::where('email', $email)->first();
-
-    $valid = false;
-
-    if ($user) {
-        $storedPassword = $user->getRawOriginal('password');
-
-        if (Hash::isHashed($storedPassword)) {
-            // Password di database sudah berupa hash.
-            $valid = Hash::check($password, $storedPassword);
-        } else {
-            // Password di database masih berupa teks biasa.
-            $valid = is_string($storedPassword)
-                && hash_equals($storedPassword, $password);
+        if (!$user) {
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
         }
+
+        // Cek plain text atau hash
+        $passwordCorrect = ($this->password === $user->password) || \Illuminate\Support\Facades\Hash::check($this->password, $user->password);
+
+        if (!$passwordCorrect) {
+            RateLimiter::hit($this->throttleKey());
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
+            ]);
+        }
+
+        Auth::login($user, $this->boolean('remember'));
+        RateLimiter::clear($this->throttleKey());
+    }
+    
+    /**
+ * Jika password di database masih plain text dan cocok dengan input,
+ * langsung ubah menjadi hash sebelum Auth::attempt() dijalankan.
+ */
+protected function upgradePlainPassword(): void
+{
+    $user = User::where('email', $this->string('email'))->first();
+
+    if (! $user || ! is_string($user->password) || $user->password === '') {
+        return;
     }
 
-    if (! $valid || ! Auth::loginUsingId(
-        $user->getAuthIdentifier(),
-        $this->boolean('remember')
-    )) {
-        RateLimiter::hit($this->throttleKey());
-
-        throw ValidationException::withMessages([
-            'email' => trans('auth.failed'),
-        ]);
+    // Kalau sudah hash (bcrypt/argon), biarkan Auth::attempt() yang memeriksa
+    if (Hash::info($user->password)['algoName'] !== 'unknown') {
+        return;
     }
 
-    // Migrasikan password plaintext menjadi hash setelah login berhasil.
-    if (! Hash::isHashed($storedPassword)) {
-        $user->password = Hash::make($password);
-        $user->save();
+    // Masih plain text: bandingkan langsung, lalu simpan sebagai hash
+    if (hash_equals($user->password, (string) $this->input('password'))) {
+        $user->forceFill(['password' => $this->input('password')])->save();
     }
-
-    RateLimiter::clear($this->throttleKey());
 }
 
     /**
      * Ensure the login request is not rate limited.
      *
-     * @throws ValidationException
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
@@ -112,6 +119,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }

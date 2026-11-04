@@ -29,9 +29,17 @@ class LabelController extends Controller
             });
         }
 
+        if ($request->filled('tanggal_mulai')) {
+            $query->whereDate('tanggalpembukuan_buku', '>=', $request->string('tanggal_mulai'));
+        }
+
+        if ($request->filled('tanggal_selesai')) {
+            $query->whereDate('tanggalpembukuan_buku', '<=', $request->string('tanggal_selesai'));
+        }
+
         return Inertia::render('Label/Index', [
             'bukus' => $query->orderBy('id_buku')->paginate(20)->withQueryString(),
-            'filters' => $request->only('search'),
+            'filters' => $request->only('search', 'tanggal_mulai', 'tanggal_selesai'),
         ]);
     }
 

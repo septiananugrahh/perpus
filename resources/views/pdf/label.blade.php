@@ -32,26 +32,27 @@
 
         .barcode-col {
             display: table-cell;
-            width: 40px;
+            width: 50px;
             vertical-align: middle;
             position: relative;
         }
 
         .barcode-outer {
-            width: 40px;
+            width: 50px;
             height: 150px;
             position: relative;
             overflow: hidden;
+            margin: 0 auto;
         }
 
         .barcode-block {
             width: 150px;
-            height: 40px;
+            height: 60px;
             position: absolute;
-            top: 150px;
-            left: 0;
-            transform-origin: top left;
-            transform: rotate(-90deg);
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            transform: translate(-50%, -50%) rotate(-90deg);
             text-align: center;
         }
 

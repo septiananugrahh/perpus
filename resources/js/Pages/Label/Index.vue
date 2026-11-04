@@ -15,7 +15,11 @@ const errorMsg = computed(() => page.props.errors?.ids);
 
 // ==== Search debounce (sama pola dengan Inventory) ====
 const search = ref(props.filters?.search ?? "");
+const tanggalMulai = ref(props.filters?.tanggal_mulai ?? "");
+const tanggalSelesai = ref(props.filters?.tanggal_selesai ?? "");
+
 let debounceTimer = null;
+
 watch(search, (value) => {
     clearTimeout(debounceTimer);
     if (value.length === 0) {
@@ -25,14 +29,49 @@ watch(search, (value) => {
     if (value.length < 3) return;
     debounceTimer = setTimeout(() => runSearch(value), 400);
 });
+
 function runSearch(value) {
     router.get(
         route("label.index"),
-        { search: value },
+        { 
+            search: value,
+            tanggal_mulai: tanggalMulai.value,
+            tanggal_selesai: tanggalSelesai.value,
+        },
         {
             preserveState: true,
             preserveScroll: true,
             replace: true,
+            only: ["bukus", "filters"],
+        },
+    );
+}
+
+function terapkanFilterTanggal() {
+    router.get(
+        route("label.index"),
+        { 
+            search: search.value,
+            tanggal_mulai: tanggalMulai.value,
+            tanggal_selesai: tanggalSelesai.value,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ["bukus", "filters"],
+        },
+    );
+}
+
+function resetFilterTanggal() {
+    tanggalMulai.value = "";
+    tanggalSelesai.value = "";
+    router.get(
+        route("label.index"),
+        { search: search.value },
+        {
+            preserveState: true,
+            preserveScroll: true,
             only: ["bukus", "filters"],
         },
     );
@@ -169,6 +208,46 @@ function submitExport() {
             </div>
         </form>
 
+        <!-- Filter tanggal -->
+        <RetroCard padding="16px 24px" rounded="20px" class="retro-mt">
+            <h3 class="font-cabinet retro-panel-title" style="margin-bottom: 12px;">Filter Tanggal Pembukuan</h3>
+            <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+                <div class="retro-field">
+                    <label class="retro-label">Dari</label>
+                    <input
+                        v-model="tanggalMulai"
+                        type="date"
+                        class="retro-input"
+                    />
+                </div>
+                <div class="retro-field">
+                    <label class="retro-label">Sampai</label>
+                    <input
+                        v-model="tanggalSelesai"
+                        type="date"
+                        class="retro-input"
+                    />
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <RetroButton
+                        type="button"
+                        variant="primary"
+                        @click="terapkanFilterTanggal"
+                    >
+                        Terapkan
+                    </RetroButton>
+                    <RetroButton
+                        v-if="tanggalMulai || tanggalSelesai"
+                        type="button"
+                        variant="secondary"
+                        @click="resetFilterTanggal"
+                    >
+                        Reset
+                    </RetroButton>
+                </div>
+            </div>
+        </RetroCard>
+
         <!-- Tabel checkbox manual -->
         <RetroCard padding="0" rounded="24px" class="retro-mt">
             <div class="retro-table-header">
@@ -239,15 +318,19 @@ function submitExport() {
                 v-html="link.label"
                 @click="
                     link.url &&
-                    router.get(
-                        link.url,
-                        { search },
-                        {
-                            preserveState: true,
-                            preserveScroll: true,
-                            only: ['bukus', 'filters'],
-                        },
-                    )
+                        router.get(
+                            link.url,
+                            { 
+                                search,
+                                tanggal_mulai: tanggalMulai.value,
+                                tanggal_selesai: tanggalSelesai.value,
+                            },
+                            {
+                                preserveState: true,
+                                preserveScroll: true,
+                                only: ['bukus', 'filters'],
+                            },
+                        )
                 "
             />
         </div>
