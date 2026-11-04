@@ -47,7 +47,12 @@ const menu = [
                     
                     <RetroDropdown v-else align="left">
                         <template #trigger>
-                            <span class="retro-header__link retro-header__link--dropdown">
+                            <span
+                                class="retro-header__link retro-header__link--dropdown"
+                                :class="{
+                                    'retro-header__link--active': route().current(['buku.index', 'buku.create', 'label.index', 'buku.export.form']),
+                                }"
+                            >
                                 {{ item.label }} ▾
                             </span>
                         </template>
@@ -192,10 +197,14 @@ const menu = [
 .retro-header__link {
     color: #999;
     text-decoration: none;
-.retro-header__link--dropdown {
+    font-weight: 500;
+    padding-bottom: 4px;
+}
+.retro-header__link:hover {
     color: #1a1a1a;
 }
 .retro-header__link--dropdown {
+    display: inline-block;
     background: none;
     border: none;
     cursor: pointer;
@@ -229,7 +238,7 @@ const menu = [
     background: #fff;
     border-bottom: 1px solid var(--retro-border);
 }
-
+.retro-header__actions {
     display: flex;
     align-items: center;
     gap: 16px;
