@@ -50,7 +50,7 @@ const menu = [
                             <span
                                 class="retro-header__link retro-header__link--dropdown"
                                 :class="{
-                                    'retro-header__link--active': route().current(['buku.index', 'buku.create', 'label.index', 'buku.export.form']),
+                                    'retro-header__link--active': route().current('buku.index') || route().current('buku.create') || route().current('label.index') || route().current('buku.export.form'),
                                 }"
                             >
                                 {{ item.label }} ▾
