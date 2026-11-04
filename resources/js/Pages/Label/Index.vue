@@ -8,6 +8,7 @@ import { computed, ref, watch } from "vue";
 const props = defineProps({
     bukus: { type: Object, required: true },
     filters: { type: Object, default: () => ({}) },
+    tahunList: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -17,6 +18,7 @@ const errorMsg = computed(() => page.props.errors?.ids);
 const search = ref(props.filters?.search ?? "");
 const tanggalMulai = ref(props.filters?.tanggal_mulai ?? "");
 const tanggalSelesai = ref(props.filters?.tanggal_selesai ?? "");
+const tahun = ref(props.filters?.tahun ?? "");
 
 let debounceTimer = null;
 
@@ -37,6 +39,7 @@ function runSearch(value) {
             search: value,
             tanggal_mulai: tanggalMulai.value,
             tanggal_selesai: tanggalSelesai.value,
+            tahun: tahun.value,
         },
         {
             preserveState: true,
@@ -54,6 +57,7 @@ function terapkanFilterTanggal() {
             search: search.value,
             tanggal_mulai: tanggalMulai.value,
             tanggal_selesai: tanggalSelesai.value,
+            tahun: tahun.value,
         },
         {
             preserveState: true,
@@ -66,6 +70,7 @@ function terapkanFilterTanggal() {
 function resetFilterTanggal() {
     tanggalMulai.value = "";
     tanggalSelesai.value = "";
+    tahun.value = "";
     router.get(
         route("label.index"),
         { search: search.value },
@@ -228,6 +233,23 @@ function submitExport() {
                         class="retro-input"
                     />
                 </div>
+                <div class="retro-field">
+                    <label class="retro-label">Tahun</label>
+                    <select
+                        v-model="tahun"
+                        class="retro-input"
+                        @change="terapkanFilterTanggal"
+                    >
+                        <option value="">Semua Tahun</option>
+                        <option
+                            v-for="t in props.tahunList"
+                            :key="t"
+                            :value="t"
+                        >
+                            {{ t }}
+                        </option>
+                    </select>
+                </div>
                 <div style="display: flex; gap: 8px;">
                     <RetroButton
                         type="button"
@@ -237,7 +259,7 @@ function submitExport() {
                         Terapkan
                     </RetroButton>
                     <RetroButton
-                        v-if="tanggalMulai || tanggalSelesai"
+                        v-if="tanggalMulai || tanggalSelesai || tahun"
                         type="button"
                         variant="secondary"
                         @click="resetFilterTanggal"

@@ -18,6 +18,14 @@ class LabelController extends Controller
 
     public function index(Request $request)
     {
+        // Ambil tahun unik dari tanggalpembukuan_buku (format dd-mm-yyyy)
+        $tahunList = IndukBuku::selectRaw('DISTINCT SUBSTRING(tanggalpembukuan_buku, -4) as tahun')
+            ->whereNotNull('tanggalpembukuan_buku')
+            ->where('tanggalpembukuan_buku', '!=', '')
+            ->orderBy('tahun', 'desc')
+            ->pluck('tahun')
+            ->filter();
+
         $query = IndukBuku::query();
 
         if ($request->filled('search')) {
@@ -36,10 +44,13 @@ class LabelController extends Controller
         if ($request->filled('tanggal_selesai')) {
             $query->whereRaw("STR_TO_DATE(tanggalpembukuan_buku, '%d-%m-%Y') <= STR_TO_DATE(?, '%d-%m-%Y')", [$request->string('tanggal_selesai')]);
         }
-
+        if ($request->filled('tahun')) {
+            $query->whereRaw("SUBSTRING(tanggalpembukuan_buku, -4) = ?", [$request->string('tahun')]);
+        }
         return Inertia::render('Label/Index', [
             'bukus' => $query->orderBy('id_buku')->paginate(20)->withQueryString(),
-            'filters' => $request->only('search', 'tanggal_mulai', 'tanggal_selesai'),
+            'filters' => $request->only('search', 'tanggal_mulai', 'tanggal_selesai', 'tahun'),
+            'tahunList' => $tahunList,
         ]);
     }
 
