@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from "vue";
+import RetroDropdown from "@/Components/Retro/RetroDropdown.vue";
 import Dropdown from "@/Components/Dropdown.vue";
 import DropdownLink from "@/Components/Retro/RetroDropdownLink.vue";
 import { Link } from "@inertiajs/vue3";
@@ -7,15 +8,16 @@ import { Link } from "@inertiajs/vue3";
 const showingNavigationDropdown = ref(false);
 
 const menu = [
-    { label: "Dashboard", route: "dashboard" },
-    { label: "Peminjaman Buku", route: "peminjaman.index" },
-    { label: "Inventory", route: "buku.index" },
-    { label: "Input Buku", route: "buku.create" },
-    { label: "Santri List", route: "santri.index" },
-    { label: "Guru List", route: "guru.index" },
-    { label: "Reports", route: "dashboard" },
-    { label: "Label", route: "label.index" },
-    { label: "Export Buku", route: "buku.export.form" },
+   { label: "Dashboard", route: "dashboard" },
+   { label: "Peminjaman Buku", route: "peminjaman.index" },
+   { label: "Data Buku", route: null, dropdown: [
+       { label: "Inventory", route: "buku.index" },
+       { label: "Input Buku", route: "buku.create" },
+       { label: "Label", route: "label.index" },
+       { label: "Export Buku", route: "buku.export.form" },
+   ]},
+   { label: "Santri List", route: "santri.index" },
+   { label: "Guru List", route: "guru.index" },
 ];
 </script>
 
@@ -30,19 +32,36 @@ const menu = [
             </div>
 
             <nav class="retro-header__nav">
-                <Link
-                    v-for="item in menu"
-                    :key="item.label"
-                    :href="route(item.route)"
-                    class="retro-header__link"
-                    :class="{
-                        'retro-header__link--active': route().current(
-                            item.route,
-                        ),
-                    }"
-                >
-                    {{ item.label }}
-                </Link>
+                <template v-for="item in menu" :key="item.label">
+                    <!-- Regular link -->
+                    <Link
+                        v-if="!item.dropdown"
+                        :href="route(item.route)"
+                        class="retro-header__link"
+                        :class="{
+                            'retro-header__link--active': route().current(item.route),
+                        }"
+                    >
+                        {{ item.label }}
+                    </Link>
+                    
+                    <RetroDropdown v-else align="left">
+                        <template #trigger>
+                            <span class="retro-header__link retro-header__link--dropdown">
+                                {{ item.label }} ▾
+                            </span>
+                        </template>
+                        <template #content>
+                            <DropdownLink
+                                v-for="subitem in item.dropdown"
+                                :key="subitem.label"
+                                :href="route(subitem.route)"
+                            >
+                                {{ subitem.label }}
+                            </DropdownLink>
+                        </template>
+                    </RetroDropdown>
+                </template>
             </nav>
 
             <div class="retro-header__actions">
@@ -82,14 +101,29 @@ const menu = [
         </header>
 
         <div v-show="showingNavigationDropdown" class="retro-nav-mobile">
-            <Link
-                v-for="item in menu"
-                :key="item.label"
-                :href="route(item.route)"
-                class="retro-header__link"
-            >
-                {{ item.label }}
-            </Link>
+            <template v-for="item in menu" :key="item.label">
+                <!-- Regular link -->
+                <Link
+                    v-if="!item.dropdown"
+                    :href="route(item.route)"
+                    class="retro-header__link"
+                >
+                    {{ item.label }}
+                </Link>
+                
+                <!-- Dropdown items (mobile: show all subitems) -->
+                <div v-else class="retro-nav-mobile-group">
+                    <div class="retro-nav-mobile-group__title">{{ item.label }}</div>
+                    <Link
+                        v-for="subitem in item.dropdown"
+                        :key="subitem.label"
+                        :href="route(subitem.route)"
+                        class="retro-header__link retro-header__link--sub"
+                    >
+                        {{ subitem.label }}
+                    </Link>
+                </div>
+            </template>
         </div>
 
         <div v-if="$slots.header" class="retro-page-header">
@@ -158,10 +192,19 @@ const menu = [
 .retro-header__link {
     color: #999;
     text-decoration: none;
-    font-weight: 500;
-    padding-bottom: 4px;
+.retro-header__link--dropdown {
+    color: #1a1a1a;
 }
-.retro-header__link:hover {
+.retro-header__link--dropdown {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding-bottom: 4px;
+    color: #999;
+    text-decoration: none;
+    font-weight: 500;
+}
+.retro-header__link--dropdown:hover {
     color: #1a1a1a;
 }
 .retro-header__link--active {
@@ -169,8 +212,24 @@ const menu = [
     font-weight: 700;
     border-bottom: 2px solid var(--retro-pink);
 }
+.retro-header__link--sub {
+    padding-left: 16px;
+}
+.retro-nav-mobile-group {
+    margin-top: 8px;
+}
+.retro-nav-mobile-group__title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    padding-left: 16px;
+    color: #666;
+}
+.retro-nav-mobile {
+    padding: 16px 32px;
+    background: #fff;
+    border-bottom: 1px solid var(--retro-border);
+}
 
-.retro-header__actions {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -190,7 +249,6 @@ const menu = [
     height: 100%;
     object-fit: cover;
 }
-
 .retro-dropdown {
     border: 2px solid var(--retro-border);
     border-radius: 16px;
@@ -198,8 +256,14 @@ const menu = [
     background: #fff;
 }
 
+.retro-dropdown-menu {
+    border: 2px solid var(--retro-border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+}
+
 .retro-burger {
-    width: 40px;
     height: 40px;
     border-radius: 999px;
     border: 2px solid var(--retro-border);
