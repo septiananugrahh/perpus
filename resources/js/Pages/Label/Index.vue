@@ -9,6 +9,7 @@ const props = defineProps({
     bukus: { type: Object, required: true },
     filters: { type: Object, default: () => ({}) },
     tahunList: { type: Array, default: () => [] },
+    dateList: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -19,6 +20,7 @@ const search = ref(props.filters?.search ?? "");
 const tanggalMulai = ref(props.filters?.tanggal_mulai ?? "");
 const tanggalSelesai = ref(props.filters?.tanggal_selesai ?? "");
 const tahun = ref(props.filters?.tahun ?? "");
+const tanggalPembukuan = ref(props.filters?.tanggal_pembukuan ?? "");
 
 let debounceTimer = null;
 
@@ -40,6 +42,7 @@ function runSearch(value) {
             tanggal_mulai: tanggalMulai.value,
             tanggal_selesai: tanggalSelesai.value,
             tahun: tahun.value,
+            tanggal_pembukuan: tanggalPembukuan.value,
         },
         {
             preserveState: true,
@@ -58,6 +61,7 @@ function terapkanFilterTanggal() {
             tanggal_mulai: tanggalMulai.value,
             tanggal_selesai: tanggalSelesai.value,
             tahun: tahun.value,
+            tanggal_pembukuan: tanggalPembukuan.value,
         },
         {
             preserveState: true,
@@ -71,6 +75,7 @@ function resetFilterTanggal() {
     tanggalMulai.value = "";
     tanggalSelesai.value = "";
     tahun.value = "";
+    tanggalPembukuan.value = "";
     router.get(
         route("label.index"),
         { search: search.value },
@@ -111,6 +116,30 @@ function toggleAllOnPage() {
                 selectedIds.value.push(b.id_buku);
         });
     }
+}
+
+function selectAllFromDB() {
+    router.get(
+        route("label.index"),
+        {
+            search: search.value,
+            tanggal_mulai: tanggalMulai.value,
+            tanggal_selesai: tanggalSelesai.value,
+            tahun: tahun.value,
+            tanggal_pembukuan: tanggalPembukuan.value,
+            select_all: true,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ["allIds"],
+            onSuccess: (page) => {
+                if (page.props.allIds) {
+                    selectedIds.value = page.props.allIds;
+                }
+            },
+        },
+    );
 }
 
 const formEl = ref(null);
@@ -250,6 +279,23 @@ function submitExport() {
                         </option>
                     </select>
                 </div>
+                <div class="retro-field">
+                    <label class="retro-label">Tanggal Pembukuan</label>
+                    <select
+                        v-model="tanggalPembukuan"
+                        class="retro-input"
+                        @change="terapkanFilterTanggal"
+                    >
+                        <option value="">Semua Tanggal</option>
+                        <option
+                            v-for="d in props.dateList"
+                            :key="d"
+                            :value="d"
+                        >
+                            {{ d }}
+                        </option>
+                    </select>
+                </div>
                 <div style="display: flex; gap: 8px;">
                     <RetroButton
                         type="button"
@@ -259,7 +305,7 @@ function submitExport() {
                         Terapkan
                     </RetroButton>
                     <RetroButton
-                        v-if="tanggalMulai || tanggalSelesai || tahun"
+                        v-if="tanggalMulai || tanggalSelesai || tahun || tanggalPembukuan"
                         type="button"
                         variant="secondary"
                         @click="resetFilterTanggal"
@@ -324,6 +370,15 @@ function submitExport() {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div style="padding: 16px 24px;">
+                <RetroButton
+                    type="button"
+                    variant="secondary"
+                    @click="selectAllFromDB"
+                >
+                    Pilih Semua Data
+                </RetroButton>
             </div>
         </RetroCard>
 
