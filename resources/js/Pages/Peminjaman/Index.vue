@@ -5,7 +5,8 @@ import RetroButton from "@/Components/Retro/RetroButton.vue";
 import PinjamModal from "@/Components/Retro/PinjamModal.vue";
 import KembaliModal from "@/Components/Retro/KembaliModal.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { router } from "@inertiajs/vue3";
 
 const props = defineProps({
     loans: { type: Array, default: () => [] },
@@ -14,6 +15,40 @@ const props = defineProps({
 
 const showPinjamModal = ref(false);
 const showKembaliModal = ref(false);
+const search = ref("");
+const pendingReturnId = ref(null);
+
+const filteredLoans = computed(() => {
+    if (search.value.length < 3) return props.loans;
+    const q = search.value.toLowerCase().trim();
+    return props.loans.filter(
+        (loan) =>
+            loan.judul_buku?.toLowerCase().includes(q) ||
+            loan.peminjam_nama?.toLowerCase().includes(q) ||
+            loan.keterangan_peminjaman?.toLowerCase().includes(q) ||
+            String(loan.id_barang).includes(q)
+    );
+});
+
+function konfirmasiKembali(id_peminjaman) {
+    pendingReturnId.value = id_peminjaman;
+}
+
+function batalKembali() {
+    pendingReturnId.value = null;
+}
+
+async function kembalikan(id_peminjaman) {
+    try {
+        await router.post(route("peminjaman.kembalikan"), { id_peminjaman }, {
+            onSuccess: () => { batalKembali(); },
+            onError: (errors) => { batalKembali(); console.error(errors); },
+        });
+    } catch (e) {
+        batalKembali();
+        console.error(e);
+    }
+}
 
 function statusBadge(sisaHari) {
     if (sisaHari === null)
@@ -41,6 +76,9 @@ function statusBadge(sisaHari) {
                         {{ loans.length }} buku sedang dipinjam • batas
                         {{ batasHariPinjam }} hari
                     </p>
+                    <div class="retro-search-wrap" style="margin-top: 12px;">
+                        <input v-model="search" type="text" placeholder="Cari judul, peminjam, keterangan, ID buku... (min. 3 huruf)" class="retro-search" />
+                    </div>
                 </div>
                 <div class="retro-header-actions">
                     <Link :href="route('peminjaman.riwayat')">
@@ -76,10 +114,11 @@ function statusBadge(sisaHari) {
                             <th>Tgl Pinjam</th>
                             <th>Status</th>
                             <th>Keterangan</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="loan in loans" :key="loan.id_peminjaman">
+                        <tr v-for="loan in filteredLoans" :key="loan.id_peminjaman">
                             <td>
                                 {{ loan.judul_buku }}
                                 <span class="retro-id-tag"
@@ -115,23 +154,51 @@ function statusBadge(sisaHari) {
                                 </span>
                             </td>
                             <td>{{ loan.keterangan_peminjaman || "-" }}</td>
+                            <td>
+                                <RetroButton
+                                    variant="color"
+                                    color="red"
+                                    @click="konfirmasiKembali(loan.id_peminjaman)"
+                                >
+                                    🔙 Kembalikan
+                                </RetroButton>
+                            </td>
                         </tr>
-                        <tr v-if="loans.length === 0">
-                            <td colspan="5" class="retro-empty">
-                                Tidak ada buku yang sedang dipinjam. Klik
-                                "Pinjamkan Buku" untuk mulai.
+                        <tr v-if="filteredLoans.length === 0">
+                            <td colspan="6" class="retro-empty">
+                                Tidak ada buku yang cocok.
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </RetroCard>
-
         <PinjamModal :show="showPinjamModal" @close="showPinjamModal = false" />
         <KembaliModal
             :show="showKembaliModal"
             @close="showKembaliModal = false"
         />
+
+        <Teleport to="body">
+            <div v-if="pendingReturnId !== null" class="km-overlay" @click.self="batalKembali">
+                <div class="km-modal">
+                    <h2 class="font-cabinet km-title">🔙 Konfigurasi Kembalikan</h2>
+                    <p class="km-question">Apakah Anda yakin ingin mengembalikan buku ini?</p>
+                    <div class="km-actions">
+                        <RetroButton variant="secondary" @click="batalKembali"
+                            >Batal</RetroButton
+                        >
+                        <RetroButton
+                            variant="color"
+                            color="red"
+                            @click="kembalikan(pendingReturnId)"
+                        >
+                            Ya, Kembalikan
+                        </RetroButton>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
     </AuthenticatedLayout>
 </template>
 
@@ -157,6 +224,22 @@ function statusBadge(sisaHari) {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+.retro-search-wrap {
+    margin-top: 12px;
+}
+.retro-search {
+    width: 100%;
+    max-width: 480px;
+    padding: 12px 20px;
+    border: 2px solid var(--retro-border);
+    border-radius: 16px;
+    font-size: 14px;
+    outline: none;
+}
+.retro-search:focus {
+    background: var(--retro-yellow);
 }
 
 .retro-table-bleed-full {
@@ -240,5 +323,44 @@ function statusBadge(sisaHari) {
     text-align: center;
     padding: 40px;
     color: var(--retro-muted);
+}
+.km-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 200;
+}
+.km-modal {
+    background: #fff;
+    border: 2px solid var(--retro-border);
+    box-shadow: 8px 8px 0 0 var(--retro-border);
+    border-radius: 32px;
+    padding: 36px;
+    max-width: 520px;
+    width: 100%;
+}
+.km-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+}
+.km-question {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 16px 0 12px;
+    text-align: center;
+}
+.km-actions {
+    display: flex;
+    gap: 12px;
+}
+.km-actions > * {
+    flex: 1;
+    justify-content: center;
 }
 </style>
